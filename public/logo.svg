@@ -1,0 +1,39 @@
+<svg viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="10%" stop-color="#EF476F" />
+      <stop offset="90%" stop-color="#FF6B6B" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-opacity="0.2" />
+    </filter>
+  </defs>
+
+  <!-- Base circle -->
+  <circle cx="150" cy="150" r="145" fill="#FFFFFF" filter="url(#shadow)" />
+  
+  <!-- Split/divide visual metaphor -->
+  <path d="M150 30 L150 270" stroke="#EF476F" stroke-width="14" stroke-linecap="round" />
+  
+  <!-- Coins/Money divided and flowing -->
+  <circle cx="90" cy="90" r="40" fill="#06D6A0" />
+  <circle cx="90" cy="210" r="40" fill="#FFD166" />
+  <circle cx="210" cy="90" r="40" fill="#FFD166" />
+  <circle cx="210" cy="210" r="40" fill="#06D6A0" />
+  
+  <!-- Connection lines showing flow/relationships -->
+  <path d="M90 130 L90 170" stroke="#EF476F" stroke-width="6" stroke-linecap="round" />
+  <path d="M210 130 L210 170" stroke="#EF476F" stroke-width="6" stroke-linecap="round" />
+  <path d="M130 90 L170 90" stroke="#EF476F" stroke-width="6" stroke-linecap="round" />
+  <path d="M130 210 L170 210" stroke="#EF476F" stroke-width="6" stroke-linecap="round" />
+  
+  <!-- Rupee symbols -->
+  <text x="90" y="100" font-family="Arial, sans-serif" font-size="40" font-weight="bold" text-anchor="middle" fill="white">₹</text>
+  <text x="90" y="220" font-family="Arial, sans-serif" font-size="40" font-weight="bold" text-anchor="middle" fill="white">₹</text>
+  <text x="210" y="100" font-family="Arial, sans-serif" font-size="40" font-weight="bold" text-anchor="middle" fill="white">₹</text>
+  <text x="210" y="220" font-family="Arial, sans-serif" font-size="40" font-weight="bold" text-anchor="middle" fill="white">₹</text>
+  
+  <!-- Central binding element -->
+  <circle cx="150" cy="150" r="30" fill="url(#bgGradient)" />
+  <path d="M140 140 L160 160 M140 160 L160 140" stroke="white" stroke-width="6" stroke-linecap="round" />
+</svg>
