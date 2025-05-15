@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, BrowserRouter } from 'react-router-dom'
 import Home from './pages/Home'
 // import Policy from './pages/Policy'
 // import Terms from './pages/Terms'
@@ -8,7 +8,7 @@ import 'react-toastify/dist/ReactToastify.css';
 
 function App() {
   return (
-    <>
+    <BrowserRouter>
       <ScrollToTop />
       <Routes>
         <Route path="/" element={<MainLayout />}>
@@ -17,7 +17,7 @@ function App() {
           <Route path="terms-of-use" element={<Terms />} /> */}
         </Route>
       </Routes>
-    </>
+    </BrowserRouter>
   )
 }
 

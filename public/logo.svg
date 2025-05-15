@@ -10,7 +10,7 @@
   </defs>
 
   <!-- Base circle -->
-  <circle cx="150" cy="150" r="145" fill="#FFFFFF" filter="url(#shadow)" />
+  <circle cx="150" cy="150" r="145" fill="none" filter="url(#shadow)" />
   
   <!-- Split/divide visual metaphor -->
   <path d="M150 30 L150 270" stroke="#EF476F" stroke-width="14" stroke-linecap="round" />
