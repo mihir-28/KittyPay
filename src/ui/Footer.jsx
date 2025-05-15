@@ -41,10 +41,10 @@ const Footer = () => {
             </Link>
           </div>
 
-          {/* Theme toggle and copyright */}
+          {/* Copyright */}
           <div className="flex flex-col items-center md:items-end gap-2">
             <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-              © {currentYear} KittyPay. All rights reserved.
+              © {currentYear} KittyPay. All Rights Reserved.
             </p>
           </div>
         </div>
