@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FaLock, FaEye, FaEyeSlash, FaAt, FaGithub, FaEnvelope, FaArrowRight } from 'react-icons/fa';
+import { signInWithEmail, signInWithGoogle, sendSignInLink } from '../firebase/auth';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -10,6 +11,11 @@ const Login = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [magicLinkEmail, setMagicLinkEmail] = useState('');
+  const [showMagicLinkInput, setShowMagicLinkInput] = useState(false);
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
+  
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -23,12 +29,74 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+    setError('');
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      const { user, error } = await signInWithEmail(formData.email, formData.password);
+      
+      if (error) {
+        setError(error.message || 'Failed to sign in');
+        setIsLoading(false);
+        return;
+      }
+      
+      // Success - navigate to dashboard
       navigate('/dashboard');
-    }, 1500);
+    } catch (err) {
+      setError('An unexpected error occurred');
+      console.error(err);
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const { user, error } = await signInWithGoogle();
+      
+      if (error) {
+        setError(error.message || 'Failed to sign in with Google');
+        setIsLoading(false);
+        return;
+      }
+      
+      // Success - navigate to dashboard
+      navigate('/dashboard');
+    } catch (err) {
+      setError('An unexpected error occurred');
+      console.error(err);
+      setIsLoading(false);
+    }
+  };
+
+  const handleMagicLinkChange = (e) => {
+    setMagicLinkEmail(e.target.value);
+  };
+
+  const handleSendMagicLink = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const { success, error } = await sendSignInLink(magicLinkEmail, `${window.location.origin}/email-signin`);
+      
+      if (error) {
+        setError(error.message || 'Failed to send magic link');
+        setIsLoading(false);
+        return;
+      }
+      
+      // Show success message
+      setMagicLinkSent(true);
+      setIsLoading(false);
+    } catch (err) {
+      setError('An unexpected error occurred');
+      console.error(err);
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -69,119 +137,192 @@ const Login = () => {
               </p>
             </div>
 
-            <form className="space-y-6" onSubmit={handleSubmit}>
-              <div>
-                <div className="mb-5">
-                  <label htmlFor="email" className="block text-sm font-medium mb-1" style={{ color: 'var(--text-primary)' }}>
-                    Email Address
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <FaAt size={18} style={{ color: 'var(--text-secondary)' }} />
-                    </div>
-                    <input
-                      id="email"
-                      name="email"
-                      type="email"
-                      autoComplete="email"
-                      required
-                      value={formData.email}
-                      onChange={handleChange}
-                      className="appearance-none relative block w-full px-3 py-3 pl-10 rounded-xl focus:outline-none focus:ring-2 focus:z-10 text-sm transition-all"
-                      style={{
-                        backgroundColor: 'var(--input-background)',
-                        color: 'var(--text-primary)',
-                        border: '1px solid var(--border)',
-                        boxShadow: 'var(--shadow-sm)',
-                      }}
-                      placeholder="your-email@example.com"
-                    />
-                  </div>
-                </div>
+            {error && (
+              <div className="mb-4 p-3 rounded-lg bg-red-100 text-red-700">
+                {error}
+              </div>
+            )}
 
-                <div className="mb-2">
-                  <label htmlFor="password" className="block text-sm font-medium mb-1" style={{ color: 'var(--text-primary)' }}>
-                    Password
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <FaLock size={18} style={{ color: 'var(--text-secondary)' }} />
+            {showMagicLinkInput ? (
+              <div>
+                {magicLinkSent ? (
+                  <div className="p-4 mb-4 bg-green-100 text-green-700 rounded-xl">
+                    <p className="font-medium">Magic link sent!</p>
+                    <p className="text-sm mt-1">Check your email and click the link to sign in.</p>
+                  </div>
+                ) : (
+                  <form className="space-y-6" onSubmit={handleSendMagicLink}>
+                    <div>
+                      <label htmlFor="magic-link-email" className="block text-sm font-medium mb-1" style={{ color: 'var(--text-primary)' }}>
+                        Email Address
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <FaAt size={18} style={{ color: 'var(--text-secondary)' }} />
+                        </div>
+                        <input
+                          id="magic-link-email"
+                          type="email"
+                          required
+                          value={magicLinkEmail}
+                          onChange={handleMagicLinkChange}
+                          className="appearance-none relative block w-full px-3 py-3 pl-10 rounded-xl focus:outline-none focus:ring-2 focus:z-10 text-sm transition-all"
+                          style={{
+                            backgroundColor: 'var(--input-background)',
+                            color: 'var(--text-primary)',
+                            border: '1px solid var(--border)',
+                            boxShadow: 'var(--shadow-sm)',
+                          }}
+                          placeholder="your-email@example.com"
+                        />
+                      </div>
                     </div>
-                    <input
-                      id="password"
-                      name="password"
-                      type={showPassword ? "text" : "password"}
-                      autoComplete="current-password"
-                      required
-                      value={formData.password}
-                      onChange={handleChange}
-                      className="appearance-none relative block w-full px-3 py-3 pl-10 rounded-xl focus:outline-none focus:ring-2 focus:z-10 text-sm transition-all"
+                    <button
+                      type="submit"
+                      disabled={isLoading}
+                      className={`group relative w-full flex justify-center py-3 px-4 rounded-xl text-sm font-medium transition duration-150 ease-in-out ${isLoading ? 'opacity-80' : 'hover:opacity-90'}`}
                       style={{
-                        backgroundColor: 'var(--input-background)',
-                        color: 'var(--text-primary)',
-                        border: '1px solid var(--border)',
-                        boxShadow: 'var(--shadow-sm)',
+                        backgroundColor: 'var(--primary)',
+                        color: 'white',
+                        boxShadow: 'var(--shadow-md)'
                       }}
-                      placeholder="Enter your password"
-                    />
-                    <div
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer"
-                      onClick={() => setShowPassword(!showPassword)}
                     >
-                      {showPassword ?
-                        <FaEyeSlash size={18} style={{ color: 'var(--text-secondary)' }} /> :
-                        <FaEye size={18} style={{ color: 'var(--text-secondary)' }} />
-                      }
+                      {isLoading && (
+                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                      )}
+                      {isLoading ? 'Sending...' : 'Send Magic Link'}
+                    </button>
+                    <div className="text-center">
+                      <button 
+                        type="button" 
+                        onClick={() => setShowMagicLinkInput(false)}
+                        className="text-sm hover:underline"
+                        style={{ color: 'var(--primary)' }}
+                      >
+                        Back to login
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </div>
+            ) : (
+              <form className="space-y-6" onSubmit={handleSubmit}>
+                <div>
+                  <div className="mb-5">
+                    <label htmlFor="email" className="block text-sm font-medium mb-1" style={{ color: 'var(--text-primary)' }}>
+                      Email Address
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <FaAt size={18} style={{ color: 'var(--text-secondary)' }} />
+                      </div>
+                      <input
+                        id="email"
+                        name="email"
+                        type="email"
+                        autoComplete="email"
+                        required
+                        value={formData.email}
+                        onChange={handleChange}
+                        className="appearance-none relative block w-full px-3 py-3 pl-10 rounded-xl focus:outline-none focus:ring-2 focus:z-10 text-sm transition-all"
+                        style={{
+                          backgroundColor: 'var(--input-background)',
+                          color: 'var(--text-primary)',
+                          border: '1px solid var(--border)',
+                          boxShadow: 'var(--shadow-sm)',
+                        }}
+                        placeholder="your-email@example.com"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mb-2">
+                    <label htmlFor="password" className="block text-sm font-medium mb-1" style={{ color: 'var(--text-primary)' }}>
+                      Password
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <FaLock size={18} style={{ color: 'var(--text-secondary)' }} />
+                      </div>
+                      <input
+                        id="password"
+                        name="password"
+                        type={showPassword ? "text" : "password"}
+                        autoComplete="current-password"
+                        required
+                        value={formData.password}
+                        onChange={handleChange}
+                        className="appearance-none relative block w-full px-3 py-3 pl-10 rounded-xl focus:outline-none focus:ring-2 focus:z-10 text-sm transition-all"
+                        style={{
+                          backgroundColor: 'var(--input-background)',
+                          color: 'var(--text-primary)',
+                          border: '1px solid var(--border)',
+                          boxShadow: 'var(--shadow-sm)',
+                        }}
+                        placeholder="Enter your password"
+                      />
+                      <div
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ?
+                          <FaEyeSlash size={18} style={{ color: 'var(--text-secondary)' }} /> :
+                          <FaEye size={18} style={{ color: 'var(--text-secondary)' }} />
+                        }
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <input
-                    id="remember-me"
-                    name="remember-me"
-                    type="checkbox"
-                    className="h-4 w-4 border-gray-300 rounded"
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <input
+                      id="remember-me"
+                      name="remember-me"
+                      type="checkbox"
+                      className="h-4 w-4 border-gray-300 rounded"
+                      style={{
+                        color: 'var(--primary)',
+                        borderColor: 'var(--border)'
+                      }}
+                    />
+                    <label htmlFor="remember-me" className="ml-2 block text-sm" style={{ color: 'var(--text-secondary)' }}>
+                      Remember me
+                    </label>
+                  </div>
+
+                  <div className="text-sm">
+                    <Link to="/forgot-password" className="font-medium hover:underline" style={{ color: 'var(--primary)' }}>
+                      Forgot password?
+                    </Link>
+                  </div>
+                </div>
+
+                <div>
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className={`group relative w-full flex justify-center py-3 px-4 rounded-xl text-sm font-medium transition duration-150 ease-in-out ${isLoading ? 'opacity-80' : 'hover:opacity-90'}`}
                     style={{
-                      color: 'var(--primary)',
-                      borderColor: 'var(--border)'
+                      backgroundColor: 'var(--primary)',
+                      color: 'white',
+                      boxShadow: 'var(--shadow-md)'
                     }}
-                  />
-                  <label htmlFor="remember-me" className="ml-2 block text-sm" style={{ color: 'var(--text-secondary)' }}>
-                    Remember me
-                  </label>
+                  >
+                    {isLoading && (
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    )}
+                    {isLoading ? 'Signing in...' : 'Sign in'}
+                  </button>
                 </div>
-
-                <div className="text-sm">
-                  <Link to="/forgot-password" className="font-medium hover:underline" style={{ color: 'var(--primary)' }}>
-                    Forgot password?
-                  </Link>
-                </div>
-              </div>
-
-              <div>
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className={`group relative w-full flex justify-center py-3 px-4 rounded-xl text-sm font-medium transition duration-150 ease-in-out ${isLoading ? 'opacity-80' : 'hover:opacity-90'}`}
-                  style={{
-                    backgroundColor: 'var(--primary)',
-                    color: 'white',
-                    boxShadow: 'var(--shadow-md)'
-                  }}
-                >
-                  {isLoading && (
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                  )}
-                  {isLoading ? 'Signing in...' : 'Sign in'}
-                </button>
-              </div>
-            </form>
+              </form>
+            )}
 
             <div className="text-center mt-6">
               <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
@@ -207,22 +348,7 @@ const Login = () => {
             <div className="space-y-4 w-full max-w-xs">
               <button
                 type="button"
-                className="w-full flex items-center justify-between px-6 py-3 rounded-xl text-sm font-medium hover:opacity-90 transition-all"
-                style={{
-                  backgroundColor: 'var(--surface)',
-                  color: 'var(--text-primary)',
-                  boxShadow: 'var(--shadow-sm)',
-                }}
-              >
-                <div className="flex items-center">
-                  <FaGithub size={20} className="mr-3" />
-                  <span>Continue with GitHub</span>
-                </div>
-                <FaArrowRight size={16} />
-              </button>
-
-              <button
-                type="button"
+                onClick={handleGoogleSignIn}
                 className="w-full flex items-center justify-between px-6 py-3 rounded-xl text-sm font-medium hover:opacity-90 transition-all"
                 style={{
                   backgroundColor: 'var(--surface)',
@@ -241,6 +367,7 @@ const Login = () => {
 
               <button
                 type="button"
+                onClick={() => setShowMagicLinkInput(true)}
                 className="w-full flex items-center justify-between px-6 py-3 rounded-xl text-sm font-medium hover:opacity-90 transition-all"
                 style={{
                   backgroundColor: 'var(--surface)',
