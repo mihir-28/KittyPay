@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaArrowRight, FaUsers, FaReceipt, FaWallet, FaShieldAlt, FaLayerGroup, FaPlusCircle } from 'react-icons/fa';
+import { FaArrowRight, FaUsers, FaReceipt, FaWallet, FaShieldAlt, FaLayerGroup, FaPlusCircle, FaGlobe, FaChartPie } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 
 const Home = () => {
@@ -98,12 +98,12 @@ const Home = () => {
               {
                 icon: <FaReceipt size={24} />,
                 title: "Smart Splitting",
-                description: "Split bills equally, by percentage, or by specific amounts. Upload receipts for automatic item-by-item splitting."
+                description: "Split bills equally, by percentage, or by specific amounts. Keep track of who paid what and who owes whom."
               },
               {
-                icon: <FaWallet size={24} />,
-                title: "UPI Integration",
-                description: "Settle up instantly with any UPI app - Google Pay, PhonePe, Paytm, or your banking app of choice."
+                icon: <FaGlobe size={24} />,
+                title: "Multi-Currency Support",
+                description: "Create kitties in different currencies. Each kitty uses a single currency to keep things simple."
               },
               {
                 icon: <FaShieldAlt size={24} />,
@@ -111,14 +111,14 @@ const Home = () => {
                 description: "Your financial information is never stored. We use bank-level encryption to keep your data safe."
               },
               {
-                icon: <FaLayerGroup size={24} />,
-                title: "No Currency Conversions",
-                description: "Designed for Indian users, all transactions in INR with no hidden currency conversion fees."
+                icon: <FaChartPie size={24} />,
+                title: "Expense Analytics",
+                description: "See spending patterns and track contributions with easy-to-understand visualizations."
               },
               {
                 icon: <FaPlusCircle size={24} />,
                 title: "Simplified Settlements",
-                description: "Our smart algorithm minimizes the number of transactions needed to settle a group."
+                description: "Our smart algorithm shows exactly who owes what to whom with minimum transactions."
               }
             ].map((feature, index) => (
               <div
@@ -191,12 +191,12 @@ const Home = () => {
               {
                 number: "2",
                 title: "Add Expenses",
-                description: "Record expenses as they happen. Upload receipts or enter manually. Split equally or customize."
+                description: "Record expenses as they happen. Enter details and amounts. Split equally or customize per person."
               },
               {
                 number: "3",
-                title: "Settle Up",
-                description: "See who owes what with a single tap. Settle debts instantly via UPI without leaving the app."
+                title: "Track & Settle",
+                description: "See who owes what at a glance. Settle debts offline using your preferred payment methods."
               }
             ].map((step, index) => (
               <div key={index} className="flex flex-col items-center text-center relative z-10">

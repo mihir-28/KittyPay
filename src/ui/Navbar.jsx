@@ -64,20 +64,20 @@ const Navbar = () => {
               onMouseOut={(e) => e.currentTarget.style.color = 'var(--text-primary)'}>
               Home
             </Link>
-            <Link to="/send" className="px-3 py-2 transition-colors" style={{ color: 'var(--text-primary)' }}
+            <Link to="/kitties" className="px-3 py-2 transition-colors" style={{ color: 'var(--text-primary)' }}
               onMouseOver={(e) => e.currentTarget.style.color = 'var(--primary)'}
               onMouseOut={(e) => e.currentTarget.style.color = 'var(--text-primary)'}>
-              Send Money
+              My Kitties
             </Link>
-            <Link to="/receive" className="px-3 py-2 transition-colors" style={{ color: 'var(--text-primary)' }}
+            <Link to="/expenses" className="px-3 py-2 transition-colors" style={{ color: 'var(--text-primary)' }}
               onMouseOver={(e) => e.currentTarget.style.color = 'var(--primary)'}
               onMouseOut={(e) => e.currentTarget.style.color = 'var(--text-primary)'}>
-              Receive
+              Expenses
             </Link>
-            <Link to="/history" className="px-3 py-2 transition-colors" style={{ color: 'var(--text-primary)' }}
+            <Link to="/balances" className="px-3 py-2 transition-colors" style={{ color: 'var(--text-primary)' }}
               onMouseOver={(e) => e.currentTarget.style.color = 'var(--primary)'}
               onMouseOut={(e) => e.currentTarget.style.color = 'var(--text-primary)'}>
-              History
+              Balances
             </Link>
           </div>
 
@@ -104,7 +104,7 @@ const Navbar = () => {
                   color: 'var(--primary)',
                   backgroundColor: 'transparent'
                 }}
-                onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'var(--primary-light)'}
+                onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'var(--primary-light)'} 
                 onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
                 Login
               </button>
@@ -203,7 +203,7 @@ const Navbar = () => {
               Home
             </Link>
             <Link
-              to="/send"
+              to="/kitties"
               className="block px-3 py-3 rounded-md transition-colors"
               style={{ color: 'var(--text-primary)' }}
               onClick={toggleMenu}
@@ -215,10 +215,10 @@ const Navbar = () => {
                 e.currentTarget.style.backgroundColor = 'transparent';
                 e.currentTarget.style.color = 'var(--text-primary)';
               }}>
-              Send Money
+              My Kitties
             </Link>
             <Link
-              to="/receive"
+              to="/expenses"
               className="block px-3 py-3 rounded-md transition-colors"
               style={{ color: 'var(--text-primary)' }}
               onClick={toggleMenu}
@@ -230,10 +230,10 @@ const Navbar = () => {
                 e.currentTarget.style.backgroundColor = 'transparent';
                 e.currentTarget.style.color = 'var(--text-primary)';
               }}>
-              Receive
+              Expenses
             </Link>
             <Link
-              to="/history"
+              to="/balances"
               className="block px-3 py-3 rounded-md transition-colors"
               style={{ color: 'var(--text-primary)' }}
               onClick={toggleMenu}
@@ -245,7 +245,7 @@ const Navbar = () => {
                 e.currentTarget.style.backgroundColor = 'transparent';
                 e.currentTarget.style.color = 'var(--text-primary)';
               }}>
-              History
+              Balances
             </Link>
 
             {/* Theme toggle in mobile menu */}
