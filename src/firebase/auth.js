@@ -12,7 +12,7 @@ import {
   updateProfile
 } from "firebase/auth";
 import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
-import { auth, db } from "./config";
+import { auth, db, appConfig } from "./config";
 
 const googleProvider = new GoogleAuthProvider();
 
@@ -67,9 +67,13 @@ export const signInWithGoogle = async () => {
 // Send email link for passwordless sign-in
 export const sendSignInLink = async (email, redirectUrl) => {
   try {
+    // Get the base domain from appConfig or use the provided redirectUrl
+    const baseUrl = appConfig.appDomain;
+    const finalRedirectUrl = redirectUrl || `${baseUrl}/email-signin`;
+    
     // Configure the action code settings
     const actionCodeSettings = {
-      url: redirectUrl || window.location.origin,
+      url: finalRedirectUrl,
       handleCodeInApp: true,
     };
     
@@ -121,7 +125,7 @@ export const completeSignInWithEmailLink = async (email = null) => {
   }
 };
 
-// Sign out
+// Sign out user
 export const signOut = async () => {
   try {
     await firebaseSignOut(auth);

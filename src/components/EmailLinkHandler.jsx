@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { completeSignInWithEmailLink } from '../firebase/auth';
+import { toast } from 'react-hot-toast';
 
 /**
  * Component to handle email link sign-in flow
@@ -12,38 +13,53 @@ const EmailLinkHandler = () => {
   const [loading, setLoading] = useState(true);
   const [needsEmail, setNeedsEmail] = useState(false);
   const navigate = useNavigate();
-
   useEffect(() => {
     const handleEmailLink = async () => {
-      const result = await completeSignInWithEmailLink();
-      
-      if (result.user) {
-        // Successfully signed in
-        navigate('/dashboard'); // Redirect to dashboard or home
-      } else if (result.promptForEmail) {
-        // Need email from user
-        setNeedsEmail(true);
-        setLoading(false);
-      } else if (result.error) {
-        // Error occurred
-        setError(result.error.message);
+      try {
+        const result = await completeSignInWithEmailLink();
+        if (result.user) {
+          // Successfully signed in
+          toast.success('Successfully signed in!');
+          navigate('/profile'); // Redirect to profile page
+        } else if (result.promptForEmail) {
+          // Need email from user
+          setNeedsEmail(true);
+          setLoading(false);
+        } else if (result.error) {
+          // Error occurred
+          setError(result.error.message);
+          toast.error(result.error.message || 'Sign in failed');
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error("Error handling email link:", err);
+        setError(err.message || 'An unexpected error occurred');
+        toast.error('An unexpected error occurred during sign in');
         setLoading(false);
       }
     };
     
     handleEmailLink();
   }, [navigate]);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError('');
     
-    const result = await completeSignInWithEmailLink(email);
-    
-    if (result.user) {
-      navigate('/dashboard'); // Redirect to dashboard or home
-    } else if (result.error) {
-      setError(result.error.message);
+    try {
+      const result = await completeSignInWithEmailLink(email);
+      if (result.user) {
+        toast.success('Successfully signed in!');
+        navigate('/profile'); // Redirect to profile page
+      } else if (result.error) {
+        setError(result.error.message || 'Failed to complete sign in');
+        toast.error(result.error.message || 'Failed to complete sign in');
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error("Error completing sign in:", err);
+      setError(err.message || 'An unexpected error occurred');
+      toast.error('An unexpected error occurred during sign in');
       setLoading(false);
     }
   };

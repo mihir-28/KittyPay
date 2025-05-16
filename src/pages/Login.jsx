@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FaLock, FaEye, FaEyeSlash, FaAt, FaGithub, FaEnvelope, FaArrowRight } from 'react-icons/fa';
 import { signInWithEmail, signInWithGoogle, sendSignInLink } from '../firebase/auth';
+import { toast } from 'react-hot-toast';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -25,45 +26,43 @@ const Login = () => {
       [name]: value,
     }));
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
 
-    try {
-      const { user, error } = await signInWithEmail(formData.email, formData.password);
-      
-      if (error) {
+    try {      const { user, error } = await signInWithEmail(formData.email, formData.password);
+        if (error) {
         setError(error.message || 'Failed to sign in');
+        toast.error(error.message || 'Failed to sign in');
         setIsLoading(false);
         return;
       }
       
-      // Success - navigate to dashboard
-      navigate('/dashboard');
+      // Success - navigate to profile
+      toast.success('Login successful! Welcome back!');
+      navigate('/profile');
     } catch (err) {
       setError('An unexpected error occurred');
       console.error(err);
       setIsLoading(false);
     }
   };
-
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     setError('');
 
-    try {
-      const { user, error } = await signInWithGoogle();
+    try {      const { user, error } = await signInWithGoogle();
       
       if (error) {
         setError(error.message || 'Failed to sign in with Google');
+        toast.error(error.message || 'Failed to sign in with Google');
         setIsLoading(false);
         return;
       }
-      
-      // Success - navigate to dashboard
-      navigate('/dashboard');
+        // Success - navigate to profile
+      toast.success('Login successful! Welcome back!');
+      navigate('/profile');
     } catch (err) {
       setError('An unexpected error occurred');
       console.error(err);
@@ -73,27 +72,29 @@ const Login = () => {
 
   const handleMagicLinkChange = (e) => {
     setMagicLinkEmail(e.target.value);
-  };
-
-  const handleSendMagicLink = async (e) => {
+  };  const handleSendMagicLink = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
 
     try {
-      const { success, error } = await sendSignInLink(magicLinkEmail, `${window.location.origin}/email-signin`);
+      // Let the auth function handle the redirect URL based on configuration
+      const { success, error } = await sendSignInLink(magicLinkEmail);
       
       if (error) {
         setError(error.message || 'Failed to send magic link');
+        toast.error(error.message || 'Failed to send magic link');
         setIsLoading(false);
         return;
       }
       
       // Show success message
+      toast.success('Magic link sent! Check your email.');
       setMagicLinkSent(true);
       setIsLoading(false);
     } catch (err) {
       setError('An unexpected error occurred');
+      toast.error('An unexpected error occurred');
       console.error(err);
       setIsLoading(false);
     }

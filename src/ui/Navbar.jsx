@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { FaBars, FaTimes, FaSun, FaMoon } from 'react-icons/fa';
+import { Link, useNavigate } from 'react-router-dom';
+import { FaBars, FaTimes, FaSun, FaMoon, FaUser } from 'react-icons/fa';
+import { useAuth } from '../contexts/AuthContext';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isDark, setIsDark] = useState(false);
+  const { isAuthenticated, currentUser } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Check if user has a theme preference saved
@@ -32,6 +35,12 @@ const Navbar = () => {
     setIsOpen(!isOpen);
     // Prevent scrolling when mobile menu is open
     document.body.style.overflow = isOpen ? 'auto' : 'hidden';
+  };
+
+  const handleNavClick = (path) => {
+    setIsOpen(false);
+    document.body.style.overflow = 'auto';
+    navigate(path);
   };
 
   // Clean up the body overflow style when component unmounts
@@ -97,29 +106,47 @@ const Navbar = () => {
               {isDark ? <FaSun size={20} /> : <FaMoon size={20} />}
             </button>
 
-            <Link to="/login">
-              <button className="px-4 py-2 rounded-md transition-colors"
-                style={{
-                  border: '1px solid var(--primary)',
-                  color: 'var(--primary)',
-                  backgroundColor: 'transparent'
-                }}
-                onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'var(--primary-light)'} 
-                onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                Login
-              </button>
-            </Link>
-            <Link to="/signup">
-              <button className="px-4 py-2 rounded-md transition-colors"
-                style={{
-                  backgroundColor: 'var(--primary)',
-                  color: 'white'
-                }}
-                onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'var(--primary-dark)'}
-                onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'var(--primary)'}>
-                Sign Up
-              </button>
-            </Link>
+            {isAuthenticated ? (
+              <Link to="/profile">
+                <button className="px-4 py-2 rounded-md transition-colors flex items-center"
+                  style={{
+                    border: '1px solid var(--primary)',
+                    color: 'var(--primary)',
+                    backgroundColor: 'transparent'
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'var(--primary-light)'} 
+                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                  <FaUser className="mr-2" /> 
+                  {currentUser?.displayName?.split(' ')[0] || 'Profile'}
+                </button>
+              </Link>
+            ) : (
+              <>
+                <Link to="/login">
+                  <button className="px-4 py-2 rounded-md transition-colors"
+                    style={{
+                      border: '1px solid var(--primary)',
+                      color: 'var(--primary)',
+                      backgroundColor: 'transparent'
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'var(--primary-light)'} 
+                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                    Login
+                  </button>
+                </Link>
+                <Link to="/signup">
+                  <button className="px-4 py-2 rounded-md transition-colors"
+                    style={{
+                      backgroundColor: 'var(--primary)',
+                      color: 'white'
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'var(--primary-dark)'}
+                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'var(--primary)'}>
+                    Sign Up
+                  </button>
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile menu button and theme toggle */}
@@ -187,11 +214,10 @@ const Navbar = () => {
 
           {/* Mobile menu content */}
           <div className="px-4 py-4 space-y-2">
-            <Link
-              to="/"
-              className="block px-3 py-3 rounded-md transition-colors"
+            <div
+              className="block px-3 py-3 rounded-md transition-colors cursor-pointer"
               style={{ color: 'var(--text-primary)' }}
-              onClick={toggleMenu}
+              onClick={() => handleNavClick('/')}
               onMouseOver={(e) => {
                 e.currentTarget.style.backgroundColor = 'var(--primary-light)';
                 e.currentTarget.style.color = 'var(--primary)';
@@ -201,12 +227,11 @@ const Navbar = () => {
                 e.currentTarget.style.color = 'var(--text-primary)';
               }}>
               Home
-            </Link>
-            <Link
-              to="/kitties"
-              className="block px-3 py-3 rounded-md transition-colors"
+            </div>
+            <div
+              className="block px-3 py-3 rounded-md transition-colors cursor-pointer"
               style={{ color: 'var(--text-primary)' }}
-              onClick={toggleMenu}
+              onClick={() => handleNavClick('/kitties')}
               onMouseOver={(e) => {
                 e.currentTarget.style.backgroundColor = 'var(--primary-light)';
                 e.currentTarget.style.color = 'var(--primary)';
@@ -216,12 +241,11 @@ const Navbar = () => {
                 e.currentTarget.style.color = 'var(--text-primary)';
               }}>
               My Kitties
-            </Link>
-            <Link
-              to="/expenses"
-              className="block px-3 py-3 rounded-md transition-colors"
+            </div>
+            <div
+              className="block px-3 py-3 rounded-md transition-colors cursor-pointer"
               style={{ color: 'var(--text-primary)' }}
-              onClick={toggleMenu}
+              onClick={() => handleNavClick('/expenses')}
               onMouseOver={(e) => {
                 e.currentTarget.style.backgroundColor = 'var(--primary-light)';
                 e.currentTarget.style.color = 'var(--primary)';
@@ -231,12 +255,11 @@ const Navbar = () => {
                 e.currentTarget.style.color = 'var(--text-primary)';
               }}>
               Expenses
-            </Link>
-            <Link
-              to="/balances"
-              className="block px-3 py-3 rounded-md transition-colors"
+            </div>
+            <div
+              className="block px-3 py-3 rounded-md transition-colors cursor-pointer"
               style={{ color: 'var(--text-primary)' }}
-              onClick={toggleMenu}
+              onClick={() => handleNavClick('/balances')}
               onMouseOver={(e) => {
                 e.currentTarget.style.backgroundColor = 'var(--primary-light)';
                 e.currentTarget.style.color = 'var(--primary)';
@@ -246,7 +269,7 @@ const Navbar = () => {
                 e.currentTarget.style.color = 'var(--text-primary)';
               }}>
               Balances
-            </Link>
+            </div>
 
             {/* Theme toggle in mobile menu */}
             <div className="block px-3 py-3 rounded-md transition-colors"
@@ -260,7 +283,9 @@ const Navbar = () => {
                 e.currentTarget.style.color = 'var(--text-primary)';
               }}>
               <button
-                onClick={toggleTheme}
+                onClick={() => {
+                  toggleTheme();
+                }}
                 className="flex items-center w-full text-left"
               >
                 {isDark ? (
@@ -274,32 +299,48 @@ const Navbar = () => {
                 )}
               </button>
             </div>
-
-            {/* Mobile sign in/up buttons */}
+            
+            {/* Mobile sign in/up buttons or profile */}
             <div className="pt-4 space-y-3">
-              <Link to="/login" className="block w-full">
-                <button className="w-full px-4 py-2 rounded-md transition-colors"
-                  style={{
-                    border: '1px solid var(--primary)',
-                    color: 'var(--primary)',
-                    backgroundColor: 'transparent'
-                  }}
-                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'var(--primary-light)'}
-                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                  Login
-                </button>
-              </Link>
-              <Link to="/signup" className="block w-full">
-                <button className="w-full px-4 py-2 rounded-md transition-colors"
-                  style={{
-                    backgroundColor: 'var(--primary)',
-                    color: 'white'
-                  }}
-                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'var(--primary-dark)'}
-                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'var(--primary)'}>
-                  Sign Up
-                </button>
-              </Link>
+              {isAuthenticated ? (
+                <div className="block w-full" onClick={() => handleNavClick('/profile')}>
+                  <button className="w-full px-4 py-2 rounded-md transition-colors flex items-center justify-center"
+                    style={{
+                      backgroundColor: 'var(--primary)',
+                      color: 'white'
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'var(--primary-dark)'}
+                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'var(--primary)'}>
+                    <FaUser className="mr-2" /> My Profile
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="block w-full" onClick={() => handleNavClick('/login')}>
+                    <button className="w-full px-4 py-2 rounded-md transition-colors"
+                      style={{
+                        border: '1px solid var(--primary)',
+                        color: 'var(--primary)',
+                        backgroundColor: 'transparent'
+                      }}
+                      onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'var(--primary-light)'}
+                      onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                      Login
+                    </button>
+                  </div>
+                  <div className="block w-full" onClick={() => handleNavClick('/signup')}>
+                    <button className="w-full px-4 py-2 rounded-md transition-colors"
+                      style={{
+                        backgroundColor: 'var(--primary)',
+                        color: 'white'
+                      }}
+                      onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'var(--primary-dark)'}
+                      onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'var(--primary)'}>
+                      Sign Up
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>

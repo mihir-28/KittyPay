@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FaAt, FaLock, FaEye, FaEyeSlash, FaUser, FaGoogle, FaEnvelope, FaArrowRight } from 'react-icons/fa';
 import { signUpWithEmail, signInWithGoogle, sendSignInLink } from '../firebase/auth';
+import { toast } from 'react-hot-toast';
 
 const Signup = () => {
   const [formData, setFormData] = useState({
@@ -28,7 +29,6 @@ const Signup = () => {
       [name]: value
     }));
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -41,39 +41,40 @@ const Signup = () => {
       return;
     }
 
-    try {
-      const { user, error } = await signUpWithEmail(formData.email, formData.password, formData.fullName);
+    try {      const { user, error } = await signUpWithEmail(formData.email, formData.password, formData.fullName);
       
       if (error) {
         setError(error.message || 'Failed to sign up');
+        toast.error(error.message || 'Failed to sign up');
         setIsLoading(false);
         return;
       }
       
-      // Success - navigate to dashboard
-      navigate('/dashboard');
+      // Success - navigate to profile
+      toast.success('Account created successfully! Welcome to KittyPay!');
+      navigate('/profile');
     } catch (err) {
       setError('An unexpected error occurred');
       console.error(err);
       setIsLoading(false);
     }
   };
-
   const handleGoogleSignUp = async () => {
     setIsLoading(true);
     setError('');
 
-    try {
-      const { user, error } = await signInWithGoogle();
+    try {      const { user, error } = await signInWithGoogle();
       
       if (error) {
         setError(error.message || 'Failed to sign up with Google');
+        toast.error(error.message || 'Failed to sign up with Google');
         setIsLoading(false);
         return;
       }
       
-      // Success - navigate to dashboard
-      navigate('/dashboard');
+      // Success - navigate to profile
+      toast.success('Account created successfully! Welcome to KittyPay!');
+      navigate('/profile');
     } catch (err) {
       setError('An unexpected error occurred');
       console.error(err);
@@ -83,18 +84,18 @@ const Signup = () => {
 
   const handleMagicLinkChange = (e) => {
     setMagicLinkEmail(e.target.value);
-  };
-
-  const handleSendMagicLink = async (e) => {
+  };  const handleSendMagicLink = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
 
     try {
-      const { success, error } = await sendSignInLink(magicLinkEmail, `${window.location.origin}/email-signin`);
+      // Let the auth function handle the redirect URL based on configuration
+      const { success, error } = await sendSignInLink(magicLinkEmail);
       
       if (error) {
         setError(error.message || 'Failed to send magic link');
+        toast.error(error.message || 'Failed to send magic link');
         setIsLoading(false);
         return;
       }
