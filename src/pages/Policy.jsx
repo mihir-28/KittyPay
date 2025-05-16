@@ -176,7 +176,7 @@ const Policy = () => {
                 </li>
               </ul>
               <p className="mb-4" style={{ color: 'var(--text-primary)' }}>
-                To exercise these rights, please contact us at <a href="mailto:privacy@kittypay.com" className="text-[var(--primary)] hover:underline">privacy@kittypay.com</a>.
+                To exercise these rights, please contact us at <a href="mailto:mihirnagda28@gmail.com" className="text-[var(--primary)] hover:underline">mihirnagda28@gmail.com</a>.
               </p>
             </section>
 
@@ -229,7 +229,7 @@ const Policy = () => {
               <p className="mb-4" style={{ color: 'var(--text-primary)' }}>
                 If you have any questions about this Privacy Policy, please contact us at:
                 <br />
-                <a href="mailto:privacy@kittypay.com" className="text-[var(--primary)] hover:underline">privacy@kittypay.com</a>
+                <a href="mailto:mihirnagda28@gmail.com" className="text-[var(--primary)] hover:underline">mihirnagda28@gmail.com</a>
               </p>
             </section>
           </div>

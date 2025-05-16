@@ -201,7 +201,7 @@ const Terms = () => {
               <p className="mb-4" style={{ color: 'var(--text-primary)' }}>
                 If you have any questions about these Terms, please contact us at:
                 <br />
-                <a href="mailto:legal@kittypay.com" className="text-[var(--primary)] hover:underline">legal@kittypay.com</a>
+                <a href="mailto:mihirnagda28@gmail.com" className="text-[var(--primary)] hover:underline">mihirnagda28@gmail.com</a>
               </p>
             </section>
           </div>
