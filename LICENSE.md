@@ -34,7 +34,7 @@ IN NO EVENT SHALL LICENSOR BE LIABLE FOR ANY SPECIAL, INCIDENTAL, INDIRECT, OR C
 This License automatically terminates if You breach any of its terms. Upon termination, You must cease all use of the Software and destroy all copies in your possession. Licensor may also terminate this License at any time upon notice.
 
 ## 8. Privacy and Data Collection
-The Software may collect and process personal data as described in the KittyPay Privacy Policy (available at https://kittypay.com/privacy). By using the Software, You consent to such data collection and processing.
+The Software may collect and process personal data as described in the KittyPay Privacy Policy (available at https://kittypay.netlify.app/privacy-policy). By using the Software, You consent to such data collection and processing.
 
 ## 9. Updates and Maintenance
 Licensor may provide updates, patches, or new versions of the Software at its discretion. Such updates may be subject to additional or different license terms if specified at the time of update.
