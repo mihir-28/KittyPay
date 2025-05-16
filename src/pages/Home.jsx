@@ -65,7 +65,7 @@ const Home = () => {
         </div>
 
         {/* Wave divider */}
-        <div className="absolute bottom-0 left-0 right-0" style={{ transform: 'translateY(100px)' }}>
+        <div className="absolute bottom-0 left-0 right-0 transform translate-y-[10px] md:translate-y-[100px] lg:translate-y-[90px]">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320" style={{ display: 'block' }}>
             <path
               fill="var(--surface)"
@@ -87,7 +87,7 @@ const Home = () => {
               Our platform is designed specifically for Indian users with features that make expense management hassle-free.
             </p>
           </div>
-      
+
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8">
             {[
               {
@@ -149,7 +149,7 @@ const Home = () => {
                     style={{ backgroundColor: 'var(--primary-light)', color: 'var(--primary)' }}>
                     {feature.icon}
                   </div>
-                  
+
                   {/* Text content */}
                   <div className="flex-1">
                     <h3 className="text-lg md:text-xl font-semibold mb-1 md:mb-3" style={{ color: 'var(--text-primary)' }}>
