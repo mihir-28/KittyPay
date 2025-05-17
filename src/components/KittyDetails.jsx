@@ -195,51 +195,98 @@ const KittyDetails = ({ kittyId, onBack }) => {
             </div>
           </div>
         </div>
-
         <h2 className="text-lg font-semibold mb-4">All Expenses</h2>
         {kitty.expenses && kitty.expenses.length > 0 ? (
-          <div className="bg-[var(--background)] rounded-lg overflow-hidden">
-            <table className="w-full">
-              <thead className="bg-[var(--surface)]">
-                <tr>
-                  <th className="py-3 px-4 text-left">Description</th>
-                  <th className="py-3 px-4 text-left">Paid By</th>
-                  <th className="py-3 px-4 text-left">Shared With</th>
-                  <th className="py-3 px-4 text-right">Amount</th>
-                  <th className="py-3 px-4 text-right">Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {kitty.expenses.map((expense, idx) => (
-                  <tr key={expense.id || idx} className="border-t border-[var(--border)]">
-                    <td className="py-3 px-4">{expense.description}</td>
-                    <td className="py-3 px-4">{expense.paidBy}</td>
-                    <td className="py-3 px-4">
-                      {expense.participants ? (
-                        <div className="flex flex-wrap gap-1">
-                          {expense.participants.length === kitty.members.length ? (
-                            <span className="text-sm text-[var(--text-secondary)]">Everyone</span>
+          <>
+            {/* Table view for desktop */}
+            <div className="hidden md:block bg-[var(--background)] rounded-lg overflow-hidden">
+              <table className="w-full">
+                <thead className="bg-[var(--surface)]">
+                  <tr>
+                    <th className="py-3 px-4 text-left">Description</th>
+                    <th className="py-3 px-4 text-left">Paid By</th>
+                    <th className="py-3 px-4 text-left">Shared With</th>
+                    <th className="py-3 px-4 text-right">Amount</th>
+                    <th className="py-3 px-4 text-right">Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {kitty.expenses.map((expense, idx) => (
+                    <tr key={expense.id || idx} className="border-t border-[var(--border)]">
+                      <td className="py-3 px-4">{expense.description}</td>
+                      <td className="py-3 px-4">{expense.paidBy}</td>
+                      <td className="py-3 px-4">
+                        {expense.participants ? (
+                          <div className="flex flex-wrap gap-1">
+                            {expense.participants.length === kitty.members.length ? (
+                              <span className="text-sm text-[var(--text-secondary)]">Everyone</span>
+                            ) : (
+                              expense.participants.map((p, i) => (
+                                <span key={i} className="text-sm bg-[var(--background)] px-1.5 py-0.5 rounded">
+                                  {p.name}
+                                </span>
+                              ))
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-sm text-[var(--text-secondary)]">Everyone</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 text-right font-medium">{kitty.currency || '$'}{expense.amount.toFixed(2)}</td>
+                      <td className="py-3 px-4 text-right text-[var(--text-secondary)]">
+                        {expense.createdAt ? new Date(expense.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Card view for mobile */}
+            <div className="md:hidden space-y-4">
+              {kitty.expenses.map((expense, idx) => (
+                <div key={expense.id || idx} className="bg-[var(--background)] rounded-lg p-4 shadow-sm border border-[var(--border)]">
+                  <div className="flex justify-between items-start mb-3">
+                    <h3 className="font-medium text-lg">{expense.description}</h3>
+                    <div className="font-bold text-lg">{kitty.currency || '$'}{expense.amount.toFixed(2)}</div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-[var(--text-secondary)]">Paid by</span>
+                      <span className="text-sm font-medium">{expense.paidBy}</span>
+                    </div>
+
+                    <div className="flex flex-col">
+                      <span className="text-sm text-[var(--text-secondary)] mb-1">Shared with</span>
+                      <div className="flex flex-wrap gap-1">
+                        {expense.participants ? (
+                          expense.participants.length === kitty.members.length ? (
+                            <span className="text-sm">Everyone</span>
                           ) : (
                             expense.participants.map((p, i) => (
-                              <span key={i} className="text-sm bg-[var(--background)] px-1.5 py-0.5 rounded">
+                              <span key={i} className="text-xs bg-[var(--surface)] px-2 py-1 rounded-full">
                                 {p.name}
                               </span>
                             ))
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-sm text-[var(--text-secondary)]">Everyone</span>
-                      )}
-                    </td>
-                    <td className="py-3 px-4 text-right font-medium">{kitty.currency || '$'}{expense.amount.toFixed(2)}</td>
-                    <td className="py-3 px-4 text-right text-[var(--text-secondary)]">
-                      {expense.createdAt ? new Date(expense.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                          )
+                        ) : (
+                          <span className="text-sm">Everyone</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between pt-2 mt-2 border-t border-[var(--border)]">
+                      <span className="text-xs text-[var(--text-secondary)]">Date</span>
+                      <span className="text-xs">
+                        {expense.createdAt ? new Date(expense.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         ) : (
           <p className="text-center py-4 bg-[var(--background)] rounded-lg text-[var(--text-secondary)]">
             No expenses yet
@@ -247,16 +294,16 @@ const KittyDetails = ({ kittyId, onBack }) => {
         )}
       </div>
       <h2 className="text-xl font-bold mb-4">Member Balances</h2>
-      <div className="bg-[var(--surface)] p-6 rounded-xl shadow-sm border border-[var(--border)]">
+      <div className="bg-[var(--surface)] p-4 md:p-6 rounded-xl shadow-sm border border-[var(--border)]">
         <p className="mb-4 text-sm text-[var(--text-secondary)]">
           These balances show what each person has paid, what they should have paid based on their participation in expenses, and their net balance.
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
           {balances.map((balance, idx) => (
             <div
               key={balance.userId || idx}
-              className={`p-4 rounded-lg ${balance.owes > 0 ? 'bg-red-50 dark:bg-red-900/10' :
+              className={`p-3 md:p-4 rounded-lg ${balance.owes > 0 ? 'bg-red-50 dark:bg-red-900/10' :
                 balance.owes < 0 ? 'bg-green-50 dark:bg-green-900/10' :
                   'bg-[var(--background)]'
                 }`}
@@ -315,9 +362,30 @@ const KittyDetails = ({ kittyId, onBack }) => {
               {calculateSettlements().map((settlement, idx) => (
                 <div
                   key={idx}
-                  className="flex justify-between items-center p-3 rounded-md bg-[var(--surface)] border border-[var(--border)] shadow-sm"
+                  className="flex flex-col sm:flex-row justify-between items-center p-3 rounded-md bg-[var(--surface)] border border-[var(--border)] shadow-sm"
                 >
-                  <div className="flex items-center space-x-2">
+                  {/* Mobile layout (stacked) */}
+                  <div className="flex w-full justify-between items-center sm:hidden">
+                    <div className="flex items-center">
+                      <div className="w-7 h-7 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center text-red-600 dark:text-red-400 mr-2">
+                        <span className="text-sm font-semibold">-</span>
+                      </div>
+                      <span className="font-medium">{settlement.from}</span>
+                    </div>
+                    <div className="font-bold text-lg">{kitty.currency || '$'}{settlement.amount.toFixed(2)}</div>
+                  </div>
+                  <div className="flex w-full justify-between items-center mt-2 sm:hidden">
+                    <div className="flex items-center">
+                      <div className="w-7 h-7 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center text-green-600 dark:text-green-400 mr-2">
+                        <span className="text-sm font-semibold">+</span>
+                      </div>
+                      <span className="font-medium">{settlement.to}</span>
+                    </div>
+                    <div className="text-xs text-[var(--text-secondary)]">receives payment</div>
+                  </div>
+
+                  {/* Desktop layout (horizontal) */}
+                  <div className="hidden sm:flex items-center space-x-2">
                     <div className="w-7 h-7 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center text-red-600 dark:text-red-400">
                       <span className="text-sm font-semibold">-</span>
                     </div>
@@ -326,11 +394,11 @@ const KittyDetails = ({ kittyId, onBack }) => {
                       <div className="text-xs text-[var(--text-secondary)]">should pay</div>
                     </div>
                   </div>
-                  <div className="flex flex-col items-center px-2">
+                  <div className="hidden sm:flex flex-col items-center px-2">
                     <div className="text-lg font-bold">{kitty.currency || '$'}{settlement.amount.toFixed(2)}</div>
                     <div className="text-xs text-[var(--text-secondary)]">to</div>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="hidden sm:flex items-center space-x-2">
                     <div>
                       <span className="font-medium">{settlement.to}</span>
                       <div className="text-xs text-[var(--text-secondary)]">will receive</div>
