@@ -153,65 +153,90 @@ const Profile = () => {
       toast.error('Failed to sign out');
       console.error(error);
     }
-  };
-  // Handle password change
+  };  // Handle password change
   const handleChangePassword = async (e) => {
     e.preventDefault();
 
-    // Check if user signed in with Google
+    // Different validation for Google vs email users
     if (userData.isGoogleUser) {
-      toast.error('Password change is not available for Google accounts');
-      setShowPasswordModal(false);
-      return;
-    }
-
-    // Validation
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      toast.error('All fields are required');
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      toast.error('New passwords do not match');
-      return;
-    }
-
-    if (newPassword.length < 6) {
-      toast.error('Password must be at least 6 characters');
-      return;
-    }
-
-    setPasswordLoading(true);
-
-    try {
-      // First, reauthenticate the user
-      const credential = EmailAuthProvider.credential(
-        auth.currentUser.email,
-        currentPassword
-      );
-
-      await reauthenticateWithCredential(auth.currentUser, credential);
-
-      // Then update the password
-      await updatePassword(auth.currentUser, newPassword);
-
-      // Clear form and close modal
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-      setShowPasswordModal(false);
-
-      toast.success('Password updated successfully');
-    } catch (error) {
-      console.error('Error changing password:', error);
-      if (error.code === 'auth/wrong-password') {
-        toast.error('Current password is incorrect');
-      } else {
-        toast.error('Failed to update password: ' + (error.message || 'Unknown error'));
+      // Google users - only need new password and confirm
+      if (!newPassword || !confirmPassword) {
+        toast.error('Password is required');
+        return;
       }
-    } finally {
-      setPasswordLoading(false);
+      
+      if (newPassword !== confirmPassword) {
+        toast.error('Passwords do not match');
+        return;
+      }
+      
+      if (newPassword.length < 6) {
+        toast.error('Password must be at least 6 characters');
+        return;
+      }
+      
+      setPasswordLoading(true);
+      
+      try {
+        // For Google users, set password directly (they're already authenticated)
+        await updatePassword(auth.currentUser, newPassword);
+        toast.success('Password created successfully');
+      } catch (error) {
+        console.error('Error setting password:', error);
+        
+        // Check for common errors with Google users
+        if (error.code === 'auth/requires-recent-login') {
+          toast.error('For security reasons, please logout and sign in again before creating a password');
+        } else {
+          toast.error('Failed to create password: ' + (error.message || 'Unknown error'));
+        }
+        setPasswordLoading(false);
+        return;
+      }
+    } else {
+      // Email users - require current password verification
+      if (!currentPassword || !newPassword || !confirmPassword) {
+        toast.error('All fields are required');
+        return;
+      }
+
+      if (newPassword !== confirmPassword) {
+        toast.error('New passwords do not match');
+        return;
+      }
+
+      if (newPassword.length < 6) {
+        toast.error('Password must be at least 6 characters');
+        return;
+      }
+
+      setPasswordLoading(true);
+
+      try {
+        // First, reauthenticate the user
+        const credential = EmailAuthProvider.credential(
+          auth.currentUser.email,
+          currentPassword
+        );
+
+        await reauthenticateWithCredential(auth.currentUser, credential);      // Then update the password
+        await updatePassword(auth.currentUser, newPassword);
+        toast.success('Password updated successfully');
+      } catch (error) {
+        console.error('Error changing password:', error);
+        if (error.code === 'auth/wrong-password') {
+          toast.error('Current password is incorrect');
+        } else {
+          toast.error('Failed to update password: ' + (error.message || 'Unknown error'));
+        }
+      }
     }
+      // Clear form and close modal (regardless of user type)
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setShowPasswordModal(false);
+    setPasswordLoading(false);
   };
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--background)' }}>
@@ -473,8 +498,7 @@ const Profile = () => {
               <FaShieldAlt className="mr-3" /> Account Security
             </motion.h3>
 
-            <div className="space-y-5">
-              <motion.div
+            <div className="space-y-5">              <motion.div
                 className="flex justify-between items-center p-4 rounded-lg"
                 style={{ backgroundColor: 'var(--background)' }}
                 transition={{ duration: 0.2 }}
@@ -483,35 +507,21 @@ const Profile = () => {
                   <p className="font-medium" style={{ color: 'var(--text-primary)' }}>Password</p>
                   <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                     {userData.isGoogleUser
-                      ? 'You signed in with Google'
+                      ? 'Set password to enable email login'
                       : 'Last changed: Never'}
                   </p>
                 </div>
-                {!userData.isGoogleUser ? (
-                  <motion.button
-                    className="px-4 py-2 text-sm rounded-full"
-                    style={{
-                      backgroundColor: 'var(--primary)',
-                      color: 'var(--text-on-primary)'
-                    }}
-                    onClick={() => setShowPasswordModal(true)}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    Update
-                  </motion.button>
-                ) : (
-                  <motion.button
-                    className="px-4 py-2 text-sm rounded-full"
-                    style={{
-                      backgroundColor: 'var(--text-secondary)',
-                      color: 'var(--text-on-primary)',
-                      opacity: 0.7
-                    }}
-                    disabled
-                  >
-                    Not Available
-                  </motion.button>
-                )}
+                <motion.button
+                  className="px-4 py-2 text-sm rounded-full"
+                  style={{
+                    backgroundColor: 'var(--primary)',
+                    color: 'var(--text-on-primary)'
+                  }}
+                  onClick={() => setShowPasswordModal(true)}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  {userData.isGoogleUser ? 'Create' : 'Update'}
+                </motion.button>
               </motion.div>
               <motion.div
                 className="flex justify-between items-center p-4 rounded-lg"
@@ -650,10 +660,9 @@ const Profile = () => {
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ type: "spring", damping: 15 }}
-          >
-            <div className="flex justify-between items-center mb-6">
+          >            <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-bold flex items-center" style={{ color: 'var(--text-primary)' }}>
-                <FaKey className="mr-2" /> Change Password
+                <FaKey className="mr-2" /> {userData.isGoogleUser ? 'Create Password' : 'Change Password'}
               </h3>
               <motion.button
                 whileTap={{ scale: 0.95 }}
@@ -662,26 +671,26 @@ const Profile = () => {
               >
                 &times;
               </motion.button>
-            </div>
-
-            <form onSubmit={handleChangePassword} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
-                  Current Password
-                </label>
-                <input
-                  type="password"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-opacity-50 transition-all"
-                  style={{
-                    borderColor: 'var(--border)',
-                    backgroundColor: 'var(--input-background)',
-                    color: 'var(--text-primary)',
-                  }}
-                  required
-                />
-              </div>
+            </div>            <form onSubmit={handleChangePassword} className="space-y-4">
+              {!userData.isGoogleUser && (
+                <div>
+                  <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+                    Current Password
+                  </label>
+                  <input
+                    type="password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-opacity-50 transition-all"
+                    style={{
+                      borderColor: 'var(--border)',
+                      backgroundColor: 'var(--input-background)',
+                      color: 'var(--text-primary)',
+                    }}
+                    required={!userData.isGoogleUser}
+                  />
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
@@ -733,8 +742,7 @@ const Profile = () => {
                   disabled={passwordLoading}
                 >
                   Cancel
-                </motion.button>
-                <motion.button
+                </motion.button>                <motion.button
                   type="submit"
                   className="px-4 py-2 rounded-full font-medium"
                   style={{
@@ -744,7 +752,7 @@ const Profile = () => {
                   whileTap={{ scale: 0.95 }}
                   disabled={passwordLoading}
                 >
-                  {passwordLoading ? 'Updating...' : 'Update Password'}
+                  {passwordLoading ? 'Updating...' : (userData.isGoogleUser ? 'Create Password' : 'Update Password')}
                 </motion.button>
               </div>
             </form>
