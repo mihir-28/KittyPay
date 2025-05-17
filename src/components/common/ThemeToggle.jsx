@@ -35,7 +35,6 @@ const ThemeToggle = ({ className = '', size = 'md' }) => {
   useEffect(() => {
     applyTheme(isDarkMode);
   }, [isDarkMode]);
-
   // Initialize theme based on stored preferences
   useEffect(() => {
     // Listen for system preference changes
@@ -46,10 +45,19 @@ const ThemeToggle = ({ className = '', size = 'md' }) => {
       }
     };
 
+    // Listen for theme changes from other components (like Profile page)
+    const handleThemeChange = (e) => {
+      setIsDarkMode(e.detail.isDark);
+    };
+
     const darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
     darkModeQuery.addEventListener('change', handleSystemThemeChange);
+    window.addEventListener('theme-changed', handleThemeChange);
 
-    return () => darkModeQuery.removeEventListener('change', handleSystemThemeChange);
+    return () => {
+      darkModeQuery.removeEventListener('change', handleSystemThemeChange);
+      window.removeEventListener('theme-changed', handleThemeChange);
+    };
   }, []);
 
   // Function to apply theme
@@ -66,13 +74,16 @@ const ThemeToggle = ({ className = '', size = 'md' }) => {
     document.body.style.backgroundColor = 'var(--background)';
     document.body.style.color = 'var(--text-primary)';
   };
-
   // Toggle theme manually
   const toggleDarkMode = () => {
     const newMode = !isDarkMode;
 
-    // Store user preference in localStorage
+    // Store user preference in localStorage using both keys for compatibility
     localStorage.setItem('theme-preference', newMode ? 'dark' : 'light');
+    localStorage.setItem('theme', newMode ? 'dark' : 'light');
+
+    // Dispatch event to notify other components
+    window.dispatchEvent(new CustomEvent('theme-changed', { detail: { isDark: newMode } }));
 
     // Update state
     setIsDarkMode(newMode);

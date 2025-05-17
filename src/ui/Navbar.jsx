@@ -8,7 +8,6 @@ const Navbar = () => {
   const [isDark, setIsDark] = useState(false);
   const { isAuthenticated, currentUser } = useAuth();
   const navigate = useNavigate();
-
   useEffect(() => {
     // Check if user has a theme preference saved
     const savedTheme = localStorage.getItem('theme');
@@ -18,6 +17,17 @@ const Navbar = () => {
       setIsDark(true);
       document.documentElement.classList.add('dark-theme');
     }
+    
+    // Listen for theme changes from other components
+    const handleThemeChange = (e) => {
+      setIsDark(e.detail.isDark);
+    };
+    
+    window.addEventListener('theme-changed', handleThemeChange);
+    
+    return () => {
+      window.removeEventListener('theme-changed', handleThemeChange);
+    };
   }, []);
 
   const toggleTheme = () => {

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { FaUser, FaEnvelope, FaCalendarAlt, FaEdit, FaKey, FaSignOutAlt, FaCreditCard, FaShieldAlt } from 'react-icons/fa';
+import { FaSun, FaMoon } from 'react-icons/fa';
 import { signOut } from '../firebase/auth';
-import { updateProfile } from 'firebase/auth'; 
+import { updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth'; 
 import { auth } from '../firebase/config';
 import { toast } from 'react-hot-toast';
 import { motion } from 'framer-motion';
@@ -19,8 +20,14 @@ const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
+  const [isDark, setIsDark] = useState(false);
+  
+  // Password change states
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordLoading, setPasswordLoading] = useState(false);  useEffect(() => {
     // If we have a current user, populate the user data
     if (currentUser) {
       setUserData({
@@ -32,11 +39,42 @@ const Profile = () => {
           : 'Unknown',
         lastSignInTime: currentUser.metadata?.lastSignInTime
           ? new Date(currentUser.metadata.lastSignInTime).toLocaleDateString()
-          : 'Unknown'
+          : 'Unknown',
+        // Check if user is from Google auth
+        isGoogleUser: currentUser.providerData?.some(provider => provider.providerId === 'google.com') || false
       });
       setEditedName(currentUser.displayName || '');
     }
   }, [currentUser]);
+  
+  // Dark mode toggle effect
+  useEffect(() => {
+    // Check if user has a theme preference saved
+    const savedTheme = localStorage.getItem('theme') || localStorage.getItem('theme-preference');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+    if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+      setIsDark(true);
+    }
+  }, []);
+    // Toggle theme function
+  const toggleTheme = () => {
+    const newIsDark = !isDark;
+    setIsDark(newIsDark);
+    
+    if (newIsDark) {
+      document.documentElement.classList.add('dark-theme');
+      localStorage.setItem('theme-preference', 'dark');
+      localStorage.setItem('theme', 'dark'); // Also set the navbar's theme key
+    } else {
+      document.documentElement.classList.remove('dark-theme');
+      localStorage.setItem('theme-preference', 'light');
+      localStorage.setItem('theme', 'light'); // Also set the navbar's theme key
+    }
+    
+    // Dispatch an event so other components can react to the theme change
+    window.dispatchEvent(new CustomEvent('theme-changed', { detail: { isDark: newIsDark } }));
+  };
 
   if (!currentUser) {
     return (
@@ -82,14 +120,72 @@ const Profile = () => {
       setIsLoading(false);
     }
   };
-  
-  const handleSignOut = async () => {
+    const handleSignOut = async () => {
     try {
       await signOut();
       toast.success('Signed out successfully');
     } catch (error) {
       toast.error('Failed to sign out');
       console.error(error);
+    }
+  };
+    // Handle password change
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    
+    // Check if user signed in with Google
+    if (userData.isGoogleUser) {
+      toast.error('Password change is not available for Google accounts');
+      setShowPasswordModal(false);
+      return;
+    }
+    
+    // Validation
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      toast.error('All fields are required');
+      return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+      toast.error('New passwords do not match');
+      return;
+    }
+    
+    if (newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+    
+    setPasswordLoading(true);
+    
+    try {
+      // First, reauthenticate the user
+      const credential = EmailAuthProvider.credential(
+        auth.currentUser.email,
+        currentPassword
+      );
+      
+      await reauthenticateWithCredential(auth.currentUser, credential);
+      
+      // Then update the password
+      await updatePassword(auth.currentUser, newPassword);
+      
+      // Clear form and close modal
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setShowPasswordModal(false);
+      
+      toast.success('Password updated successfully');
+    } catch (error) {
+      console.error('Error changing password:', error);
+      if (error.code === 'auth/wrong-password') {
+        toast.error('Current password is incorrect');
+      } else {
+        toast.error('Failed to update password: ' + (error.message || 'Unknown error'));
+      }
+    } finally {
+      setPasswordLoading(false);
     }
   };
     return (
@@ -353,8 +449,7 @@ const Profile = () => {
               <FaShieldAlt className="mr-3" /> Account Security
             </motion.h3>
             
-            <div className="space-y-5">
-              <motion.div 
+            <div className="space-y-5">              <motion.div 
                 className="flex justify-between items-center p-4 rounded-lg" 
                 style={{ backgroundColor: 'var(--background)' }}
                 whileHover={{ scale: 1.02 }}
@@ -362,19 +457,39 @@ const Profile = () => {
               >
                 <div>
                   <p className="font-medium" style={{ color: 'var(--text-primary)' }}>Password</p>
-                  <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Last changed: Never</p>
+                  <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                    {userData.isGoogleUser 
+                      ? 'You signed in with Google' 
+                      : 'Last changed: Never'}
+                  </p>
                 </div>
-                <motion.button 
-                  className="px-4 py-2 text-sm rounded-full"
-                  style={{ 
-                    backgroundColor: 'var(--primary)',
-                    color: 'var(--text-on-primary)'
-                  }}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  Update
-                </motion.button>
+                {!userData.isGoogleUser ? (
+                  <motion.button 
+                    className="px-4 py-2 text-sm rounded-full"
+                    style={{ 
+                      backgroundColor: 'var(--primary)',
+                      color: 'var(--text-on-primary)'
+                    }}
+                    onClick={() => setShowPasswordModal(true)}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    Update
+                  </motion.button>
+                ) : (
+                  <motion.button 
+                    className="px-4 py-2 text-sm rounded-full"
+                    style={{ 
+                      backgroundColor: 'var(--text-secondary)',
+                      color: 'var(--text-on-primary)',
+                      opacity: 0.7
+                    }}
+                    disabled
+                    whileHover={{ scale: 1 }}
+                  >
+                    Not Available
+                  </motion.button>
+                )}
               </motion.div>
               
               <motion.div 
@@ -436,8 +551,7 @@ const Profile = () => {
                   <div className="w-12 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                 </label>
               </motion.div>
-              
-              <motion.div 
+                <motion.div 
                 className="flex justify-between items-center pb-4 border-b" 
                 style={{ borderColor: 'var(--border)' }}
                 whileHover={{ scale: 1.02 }}
@@ -446,10 +560,15 @@ const Profile = () => {
                 <div>
                   <h4 className="font-semibold" style={{ color: 'var(--text-primary)' }}>Dark Mode</h4>
                   <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Switch between light and dark themes</p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" className="sr-only peer" />
-                  <div className="w-12 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </div>                <label className="relative inline-flex items-center cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    className="sr-only peer" 
+                    checked={isDark}
+                    onChange={toggleTheme}
+                  />
+                  <div className="w-12 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600">
+                  </div>
                 </label>
               </motion.div>
               
@@ -505,9 +624,127 @@ const Profile = () => {
                 No recent activities to show
               </motion.p>
             </motion.div>
+          </motion.div>        </motion.div>
+      </div>
+      
+      {/* Password Change Modal */}
+      {showPasswordModal && (
+        <motion.div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          <motion.div 
+            className="bg-opacity-90 rounded-xl p-6 shadow-xl w-full max-w-md"
+            style={{ backgroundColor: 'var(--surface)' }}
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: "spring", damping: 15 }}
+          >
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold flex items-center" style={{ color: 'var(--text-primary)' }}>
+                <FaKey className="mr-2" /> Change Password
+              </h3>
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                className="text-gray-500 hover:text-gray-700"
+                onClick={() => setShowPasswordModal(false)}
+              >
+                &times;
+              </motion.button>
+            </div>
+            
+            <form onSubmit={handleChangePassword} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+                  Current Password
+                </label>
+                <input
+                  type="password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-opacity-50 transition-all"
+                  style={{ 
+                    borderColor: 'var(--border)',
+                    backgroundColor: 'var(--input-background)',
+                    color: 'var(--text-primary)',
+                  }}
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+                  New Password
+                </label>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-opacity-50 transition-all"
+                  style={{ 
+                    borderColor: 'var(--border)',
+                    backgroundColor: 'var(--input-background)',
+                    color: 'var(--text-primary)',
+                  }}
+                  required
+                  minLength={6}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+                  Confirm New Password
+                </label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-opacity-50 transition-all"
+                  style={{ 
+                    borderColor: 'var(--border)',
+                    backgroundColor: 'var(--input-background)',
+                    color: 'var(--text-primary)',
+                  }}
+                  required
+                />
+              </div>
+              
+              <div className="flex justify-end space-x-3 mt-6">
+                <motion.button
+                  type="button"
+                  className="px-4 py-2 rounded-full border"
+                  style={{ 
+                    color: 'var(--text-primary)',
+                    borderColor: 'var(--border)',
+                  }}
+                  onClick={() => setShowPasswordModal(false)}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  disabled={passwordLoading}
+                >
+                  Cancel
+                </motion.button>
+                <motion.button
+                  type="submit"
+                  className="px-4 py-2 rounded-full font-medium"
+                  style={{ 
+                    backgroundColor: 'var(--primary)',
+                    color: 'var(--text-on-primary)'
+                  }}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  disabled={passwordLoading}
+                >
+                  {passwordLoading ? 'Updating...' : 'Update Password'}
+                </motion.button>
+              </div>
+            </form>
           </motion.div>
         </motion.div>
-      </div>
+      )}
     </div>
   );
 };
