@@ -46,18 +46,43 @@ const Profile = () => {
       setEditedName(currentUser.displayName || '');
     }
   }, [currentUser]);
-  
   // Dark mode toggle effect
   useEffect(() => {
-    // Check if user has a theme preference saved
-    const savedTheme = localStorage.getItem('theme') || localStorage.getItem('theme-preference');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-
-    if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
-      setIsDark(true);
-    }
-  }, []);
-    // Toggle theme function
+    // Function to check and update theme state
+    const updateThemeState = () => {
+      const savedTheme = localStorage.getItem('theme') || localStorage.getItem('theme-preference');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const shouldBeDark = savedTheme === 'dark' || (!savedTheme && prefersDark);
+      
+      if (shouldBeDark !== isDark) {
+        setIsDark(shouldBeDark);
+      }
+    };
+    
+    // Initial check
+    updateThemeState();
+    
+    // Listen for theme changes from navbar or other components
+    const handleThemeChange = (e) => {
+      setIsDark(e.detail.isDark);
+    };
+    
+    // Listen for storage changes (in case theme is changed from another tab/window)
+    const handleStorageChange = (e) => {
+      if (e.key === 'theme' || e.key === 'theme-preference') {
+        updateThemeState();
+      }
+    };
+    
+    window.addEventListener('theme-changed', handleThemeChange);
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('theme-changed', handleThemeChange);
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []); // Empty dependency array since we only want to set up listeners once
+  // Toggle theme function
   const toggleTheme = () => {
     const newIsDark = !isDark;
     setIsDark(newIsDark);

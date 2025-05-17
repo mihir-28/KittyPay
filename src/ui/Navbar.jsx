@@ -29,16 +29,23 @@ const Navbar = () => {
       window.removeEventListener('theme-changed', handleThemeChange);
     };
   }, []);
-
   const toggleTheme = () => {
+    const newIsDark = !isDark;
+    
     if (isDark) {
       document.documentElement.classList.remove('dark-theme');
       localStorage.setItem('theme', 'light');
+      localStorage.setItem('theme-preference', 'light'); // Also set theme-preference for consistency
     } else {
       document.documentElement.classList.add('dark-theme');
       localStorage.setItem('theme', 'dark');
+      localStorage.setItem('theme-preference', 'dark'); // Also set theme-preference for consistency
     }
-    setIsDark(!isDark);
+    
+    setIsDark(newIsDark);
+    
+    // Dispatch event to notify other components like Profile page
+    window.dispatchEvent(new CustomEvent('theme-changed', { detail: { isDark: newIsDark } }));
   };
 
   const toggleMenu = () => {
