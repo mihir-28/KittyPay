@@ -1,0 +1,52 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // User profiles can only be read/written by the owner
+    match /users/{userId} {
+      allow read, update, delete: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null;
+    }
+    
+    // Kitties (expense groups)
+    match /kitties/{kittyId} {
+      // Only creator or members can read kitties
+      allow read: if request.auth != null && 
+                   (resource.data.createdBy == request.auth.uid || 
+                    exists(/databases/$(database)/documents/kitties/$(kittyId)/members/$(request.auth.uid)));
+      
+      // Any authenticated user can create a kitty
+      allow create: if request.auth != null;
+      
+      // Only creator or members can update kitties
+      allow update: if request.auth != null && 
+                     (resource.data.createdBy == request.auth.uid || 
+                      exists(/databases/$(database)/documents/kitties/$(kittyId)/members/$(request.auth.uid)));
+      
+      // Only the creator can delete
+      allow delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
+      
+      // Members collection for a kitty
+      match /members/{memberId} {
+        allow read: if request.auth != null;
+        allow write: if request.auth != null && 
+                      get(/databases/$(database)/documents/kitties/$(kittyId)).data.createdBy == request.auth.uid;
+      }
+      
+      // Expenses within kitties
+      match /expenses/{expenseId} {
+        // Only creator or members can read expenses
+        allow read: if request.auth != null && 
+                     (get(/databases/$(database)/documents/kitties/$(kittyId)).data.createdBy == request.auth.uid || 
+                      exists(/databases/$(database)/documents/kitties/$(kittyId)/members/$(request.auth.uid)));
+        
+        // Creator or members can add expenses
+        allow create: if request.auth != null && 
+                       (get(/databases/$(database)/documents/kitties/$(kittyId)).data.createdBy == request.auth.uid || 
+                        exists(/databases/$(database)/documents/kitties/$(kittyId)/members/$(request.auth.uid)));
+        
+        // Only the expense creator can update or delete their expense
+        allow update, delete: if request.auth != null && resource.data.paidById == request.auth.uid;
+      }
+    }
+  }
+}

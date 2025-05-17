@@ -11,6 +11,7 @@ import Home from "./pages/Home";
 import Terms from "./pages/Terms";
 import Policy from "./pages/Policy";
 import Profile from "./pages/Profile";
+import Kitties from "./pages/Kitties";
 import EmailLinkHandler from "./components/EmailLinkHandler";
 import Layout from "./layouts/MainLayout";
 
@@ -77,6 +78,15 @@ function App() {
               element={
                 <ProtectedRoute requireAuth redirectTo="/login">
                   <Profile />
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/kitties" 
+              element={
+                <ProtectedRoute requireAuth redirectTo="/login">
+                  <Kitties />
                 </ProtectedRoute>
               } 
             />

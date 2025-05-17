@@ -8,6 +8,16 @@
 
 KittyPay is a sleek and smart expense-splitting app designed for groups of friends, flatmates, and families who love to hang out but hate the awkward math afterward. Inspired by the classic kitty party concept and built for the modern Indian user, KittyPay makes sharing expenses simple, fair, and even fun.
 
+## 🔥 Firebase Integration
+
+KittyPay seamlessly integrates with Firebase to provide a robust and scalable backend:
+
+- **Authentication** - Secure user authentication with email/password and Google sign-in
+- **Firestore Database** - Real-time data synchronization for kitties, expenses, and user profiles
+- **Security Rules** - Fine-grained access control for protecting user data
+- **Cloud Storage** - Store receipt images and profile pictures (coming soon)
+- **Cloud Functions** - For advanced business logic like expense notifications (coming soon)
+
 ## ✨ Key Features
 
 ### 💰 Expense Management
@@ -69,6 +79,10 @@ npm run dev
 ```
 
 Visit `http://localhost:5173` to see the app in action!
+
+### 🔥 Firebase Setup
+
+KittyPay requires Firebase for authentication, data storage, and more. See [FIREBASE_SETUP.md](./FIREBASE_SETUP.md) for detailed instructions on configuring your Firebase project.
 
 ## 🧪 Testing
 
