@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { FaUser, FaEnvelope, FaCalendarAlt, FaEdit, FaKey, FaSignOutAlt, FaCreditCard, FaShieldAlt } from 'react-icons/fa';
 import { FaSun, FaMoon } from 'react-icons/fa';
 import { signOut } from '../firebase/auth';
-import { updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth'; 
+import { updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { auth } from '../firebase/config';
 import { toast } from 'react-hot-toast';
 import { motion } from 'framer-motion';
@@ -21,21 +21,21 @@ const Profile = () => {
   const [editedName, setEditedName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isDark, setIsDark] = useState(false);
-  
+
   // Password change states
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [passwordLoading, setPasswordLoading] = useState(false);  useEffect(() => {
+  const [passwordLoading, setPasswordLoading] = useState(false); useEffect(() => {
     // If we have a current user, populate the user data
     if (currentUser) {
       setUserData({
         displayName: currentUser.displayName || 'No Name',
         email: currentUser.email || 'No Email',
         photoURL: currentUser.photoURL || 'https://via.placeholder.com/150',
-        createdAt: currentUser.metadata?.creationTime 
-          ? new Date(currentUser.metadata.creationTime).toLocaleDateString() 
+        createdAt: currentUser.metadata?.creationTime
+          ? new Date(currentUser.metadata.creationTime).toLocaleDateString()
           : 'Unknown',
         lastSignInTime: currentUser.metadata?.lastSignInTime
           ? new Date(currentUser.metadata.lastSignInTime).toLocaleDateString()
@@ -53,30 +53,30 @@ const Profile = () => {
       const savedTheme = localStorage.getItem('theme') || localStorage.getItem('theme-preference');
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       const shouldBeDark = savedTheme === 'dark' || (!savedTheme && prefersDark);
-      
+
       if (shouldBeDark !== isDark) {
         setIsDark(shouldBeDark);
       }
     };
-    
+
     // Initial check
     updateThemeState();
-    
+
     // Listen for theme changes from navbar or other components
     const handleThemeChange = (e) => {
       setIsDark(e.detail.isDark);
     };
-    
+
     // Listen for storage changes (in case theme is changed from another tab/window)
     const handleStorageChange = (e) => {
       if (e.key === 'theme' || e.key === 'theme-preference') {
         updateThemeState();
       }
     };
-    
+
     window.addEventListener('theme-changed', handleThemeChange);
     window.addEventListener('storage', handleStorageChange);
-    
+
     return () => {
       window.removeEventListener('theme-changed', handleThemeChange);
       window.removeEventListener('storage', handleStorageChange);
@@ -86,7 +86,7 @@ const Profile = () => {
   const toggleTheme = () => {
     const newIsDark = !isDark;
     setIsDark(newIsDark);
-    
+
     if (newIsDark) {
       document.documentElement.classList.add('dark-theme');
       localStorage.setItem('theme-preference', 'dark');
@@ -96,7 +96,7 @@ const Profile = () => {
       localStorage.setItem('theme-preference', 'light');
       localStorage.setItem('theme', 'light'); // Also set the navbar's theme key
     }
-    
+
     // Dispatch an event so other components can react to the theme change
     window.dispatchEvent(new CustomEvent('theme-changed', { detail: { isDark: newIsDark } }));
   };
@@ -124,18 +124,18 @@ const Profile = () => {
       toast.error('Name cannot be empty');
       return;
     }
-    
+
     setIsLoading(true);
     try {
       await updateProfile(auth.currentUser, {
         displayName: editedName
       });
-      
+
       setUserData({
         ...userData,
         displayName: editedName
       });
-      
+
       setIsEditing(false);
       toast.success('Profile updated successfully');
     } catch (error) {
@@ -145,7 +145,7 @@ const Profile = () => {
       setIsLoading(false);
     }
   };
-    const handleSignOut = async () => {
+  const handleSignOut = async () => {
     try {
       await signOut();
       toast.success('Signed out successfully');
@@ -154,53 +154,53 @@ const Profile = () => {
       console.error(error);
     }
   };
-    // Handle password change
+  // Handle password change
   const handleChangePassword = async (e) => {
     e.preventDefault();
-    
+
     // Check if user signed in with Google
     if (userData.isGoogleUser) {
       toast.error('Password change is not available for Google accounts');
       setShowPasswordModal(false);
       return;
     }
-    
+
     // Validation
     if (!currentPassword || !newPassword || !confirmPassword) {
       toast.error('All fields are required');
       return;
     }
-    
+
     if (newPassword !== confirmPassword) {
       toast.error('New passwords do not match');
       return;
     }
-    
+
     if (newPassword.length < 6) {
       toast.error('Password must be at least 6 characters');
       return;
     }
-    
+
     setPasswordLoading(true);
-    
+
     try {
       // First, reauthenticate the user
       const credential = EmailAuthProvider.credential(
         auth.currentUser.email,
         currentPassword
       );
-      
+
       await reauthenticateWithCredential(auth.currentUser, credential);
-      
+
       // Then update the password
       await updatePassword(auth.currentUser, newPassword);
-      
+
       // Clear form and close modal
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
       setShowPasswordModal(false);
-      
+
       toast.success('Password updated successfully');
     } catch (error) {
       console.error('Error changing password:', error);
@@ -213,25 +213,25 @@ const Profile = () => {
       setPasswordLoading(false);
     }
   };
-    return (
+  return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--background)' }}>
       <div className="flex flex-col lg:flex-row">
         {/* Left Side - Fixed Panel (40% on large screens) */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, x: -50 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5 }}
           className="w-full lg:w-2/5 lg:h-screen lg:sticky lg:top-0 overflow-hidden"
         >
           <div className="h-full flex flex-col justify-center p-8 lg:p-12">
-            <motion.div 
+            <motion.div
               className="text-center mb-12"
               initial={{ y: -20 }}
               animate={{ y: 0 }}
               transition={{ delay: 0.2, duration: 0.5 }}
             >
-              <motion.h1 
-                className="text-4xl font-bold mb-4" 
+              <motion.h1
+                className="text-4xl font-bold mb-4"
                 style={{ color: 'var(--text-primary)' }}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -240,31 +240,31 @@ const Profile = () => {
                 My Profile
               </motion.h1>
             </motion.div>
-              {/* Profile Picture with Enhanced Animated Gradient Border */}
-            <motion.div 
+            {/* Profile Picture with Enhanced Animated Gradient Border */}
+            <motion.div
               className="relative mx-auto mb-8"
               whileHover={{ scale: 1.05 }}
               transition={{ duration: 0.3 }}
             >
               <div className="w-40 h-40 mx-auto rounded-full relative">
                 {/* More vibrant animated gradient border with rotation */}
-                <motion.div 
-                  className="absolute inset-0 rounded-full z-0" 
-                  style={{ 
+                <motion.div
+                  className="absolute inset-0 rounded-full z-0"
+                  style={{
                     padding: '4px',
                     background: 'linear-gradient(45deg, var(--primary), #ff36f5, #4580ff, #f660ff, var(--primary))',
                     backgroundSize: '400% 400%',
                     filter: 'brightness(1.2) contrast(1.1)'
                   }}
-                  animate={{ 
+                  animate={{
                     backgroundPosition: ['0% 0%', '100% 100%', '0% 0%'],
                     rotate: [0, 360]
                   }}
-                  transition={{ 
+                  transition={{
                     backgroundPosition: {
                       duration: 8,
-                      ease: "linear", 
-                      repeat: Infinity 
+                      ease: "linear",
+                      repeat: Infinity
                     },
                     rotate: {
                       duration: 20,
@@ -275,22 +275,22 @@ const Profile = () => {
                 >
                   <div className="w-full h-full bg-black rounded-full"></div>
                 </motion.div>
-                
-                <img 
-                  src={userData.photoURL} 
-                  alt="Profile" 
+
+                <img
+                  src={userData.photoURL}
+                  alt="Profile"
                   className="absolute inset-0 w-full h-full object-cover rounded-full p-[6px] z-10"
                 />
-                
+
                 {/* Semi-transparent edit overlay */}
-                <motion.div 
+                <motion.div
                   className="absolute inset-0 z-20 flex items-center justify-center rounded-full opacity-0 hover:opacity-100 cursor-pointer"
                   style={{
                     background: 'radial-gradient(circle, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.6) 100%)'
                   }}
-                  whileHover={{ 
+                  whileHover={{
                     scale: 1.05,
-                    boxShadow: '0 0 15px rgba(255,255,255,0.3)' 
+                    boxShadow: '0 0 15px rgba(255,255,255,0.3)'
                   }}
                   transition={{ duration: 0.2 }}
                 >
@@ -303,16 +303,16 @@ const Profile = () => {
                 </motion.div>
               </div>
             </motion.div>
-            
+
             {/* User Info */}
-            <motion.div 
+            <motion.div
               className="text-center space-y-6"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4, duration: 0.5 }}
             >
               {isEditing ? (
-                <motion.div 
+                <motion.div
                   className="mb-4"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -326,7 +326,7 @@ const Profile = () => {
                     value={editedName}
                     onChange={(e) => setEditedName(e.target.value)}
                     className="w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-opacity-50 transition-all"
-                    style={{ 
+                    style={{
                       borderColor: 'var(--border)',
                       backgroundColor: 'var(--input-background)',
                       color: 'var(--text-primary)',
@@ -335,8 +335,8 @@ const Profile = () => {
                   />
                 </motion.div>
               ) : (
-                <motion.h2 
-                  className="text-3xl font-bold" 
+                <motion.h2
+                  className="text-3xl font-bold"
                   style={{ color: 'var(--text-primary)' }}
                   whileHover={{ scale: 1.02 }}
                   transition={{ duration: 0.2 }}
@@ -344,8 +344,8 @@ const Profile = () => {
                   {userData.displayName}
                 </motion.h2>
               )}
-              
-              <motion.div 
+
+              <motion.div
                 className="flex items-center justify-center space-x-2"
                 whileHover={{ scale: 1.02 }}
               >
@@ -354,9 +354,9 @@ const Profile = () => {
                   {userData.email}
                 </p>
               </motion.div>
-              
+
               <div className="flex flex-col items-center space-y-2">
-                <motion.div 
+                <motion.div
                   className="flex items-center space-x-2"
                   whileHover={{ scale: 1.02 }}
                 >
@@ -365,8 +365,8 @@ const Profile = () => {
                     Member since: {userData.createdAt}
                   </p>
                 </motion.div>
-                
-                <motion.div 
+
+                <motion.div
                   className="flex items-center space-x-2"
                   whileHover={{ scale: 1.02 }}
                 >
@@ -376,9 +376,9 @@ const Profile = () => {
                   </p>
                 </motion.div>
               </div>
-              
+
               {/* Profile Action Buttons */}
-              <motion.div 
+              <motion.div
                 className="mt-8 flex flex-wrap justify-center gap-3"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -386,9 +386,9 @@ const Profile = () => {
               >
                 {isEditing ? (
                   <>
-                    <motion.button 
+                    <motion.button
                       className="px-5 py-2 rounded-full font-medium flex items-center"
-                      style={{ 
+                      style={{
                         backgroundColor: 'var(--primary)',
                         color: 'var(--text-on-primary)'
                       }}
@@ -399,9 +399,9 @@ const Profile = () => {
                     >
                       {isLoading ? 'Saving...' : 'Save Changes'}
                     </motion.button>
-                    <motion.button 
+                    <motion.button
                       className="px-5 py-2 rounded-full font-medium border flex items-center"
-                      style={{ 
+                      style={{
                         color: 'var(--text-primary)',
                         borderColor: 'var(--text-secondary)'
                       }}
@@ -418,9 +418,9 @@ const Profile = () => {
                   </>
                 ) : (
                   <>
-                    <motion.button 
+                    <motion.button
                       className="px-5 py-2 rounded-full font-medium mr-3 flex items-center"
-                      style={{ 
+                      style={{
                         backgroundColor: 'var(--primary)',
                         color: 'var(--text-on-primary)'
                       }}
@@ -430,9 +430,9 @@ const Profile = () => {
                     >
                       <FaEdit className="mr-2" /> Edit Profile
                     </motion.button>
-                    <motion.button 
+                    <motion.button
                       className="px-5 py-2 rounded-full font-medium border flex items-center"
-                      style={{ 
+                      style={{
                         color: 'var(--danger, #ff4d4d)',
                         borderColor: 'var(--danger, #ff4d4d)'
                       }}
@@ -448,92 +448,86 @@ const Profile = () => {
             </motion.div>
           </div>
         </motion.div>
-        
+
         {/* Right Side - Scrollable Content (60% on large screens) */}
-        <motion.div 
+        <motion.div
           className="w-full lg:w-3/5 p-6 lg:p-12 lg:overflow-y-auto"
           initial={{ opacity: 0, x: 50 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5 }}
         >
           {/* Account Security Section */}
-          <motion.div 
-            className="bg-opacity-60 rounded-xl p-6 shadow-lg mb-8" 
+          <motion.div
+            className="bg-opacity-60 rounded-xl p-6 shadow-lg mb-8"
             style={{ backgroundColor: 'var(--surface)' }}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.5 }}
-            whileHover={{ y: -5 }}
           >
-            <motion.h3 
-              className="text-2xl font-bold mb-6 flex items-center" 
+            <motion.h3
+              className="text-2xl font-bold mb-6 flex items-center"
               style={{ color: 'var(--text-primary)' }}
               whileHover={{ x: 5 }}
               transition={{ duration: 0.2 }}
             >
               <FaShieldAlt className="mr-3" /> Account Security
             </motion.h3>
-            
-            <div className="space-y-5">              <motion.div 
-                className="flex justify-between items-center p-4 rounded-lg" 
+
+            <div className="space-y-5">
+              <motion.div
+                className="flex justify-between items-center p-4 rounded-lg"
                 style={{ backgroundColor: 'var(--background)' }}
-                whileHover={{ scale: 1.02 }}
                 transition={{ duration: 0.2 }}
               >
                 <div>
                   <p className="font-medium" style={{ color: 'var(--text-primary)' }}>Password</p>
                   <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                    {userData.isGoogleUser 
-                      ? 'You signed in with Google' 
+                    {userData.isGoogleUser
+                      ? 'You signed in with Google'
                       : 'Last changed: Never'}
                   </p>
                 </div>
                 {!userData.isGoogleUser ? (
-                  <motion.button 
+                  <motion.button
                     className="px-4 py-2 text-sm rounded-full"
-                    style={{ 
+                    style={{
                       backgroundColor: 'var(--primary)',
                       color: 'var(--text-on-primary)'
                     }}
                     onClick={() => setShowPasswordModal(true)}
-                    whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
                     Update
                   </motion.button>
                 ) : (
-                  <motion.button 
+                  <motion.button
                     className="px-4 py-2 text-sm rounded-full"
-                    style={{ 
+                    style={{
                       backgroundColor: 'var(--text-secondary)',
                       color: 'var(--text-on-primary)',
                       opacity: 0.7
                     }}
                     disabled
-                    whileHover={{ scale: 1 }}
                   >
                     Not Available
                   </motion.button>
                 )}
               </motion.div>
-              
-              <motion.div 
-                className="flex justify-between items-center p-4 rounded-lg" 
+              <motion.div
+                className="flex justify-between items-center p-4 rounded-lg"
                 style={{ backgroundColor: 'var(--background)' }}
-                whileHover={{ scale: 1.02 }}
                 transition={{ duration: 0.2 }}
               >
                 <div>
                   <p className="font-medium" style={{ color: 'var(--text-primary)' }}>Two-factor Authentication</p>
                   <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Current status: Not enabled</p>
                 </div>
-                <motion.button 
+                <motion.button
                   className="px-4 py-2 text-sm rounded-full"
-                  style={{ 
+                  style={{
                     backgroundColor: 'var(--primary)',
                     color: 'var(--text-on-primary)'
                   }}
-                  whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
                   Enable
@@ -541,31 +535,28 @@ const Profile = () => {
               </motion.div>
             </div>
           </motion.div>
-          
+
           {/* Account Settings Section */}
-          <motion.div 
-            className="bg-opacity-60 rounded-xl p-6 shadow-lg mb-8" 
+          <motion.div
+            className="bg-opacity-60 rounded-xl p-6 shadow-lg mb-8"
             style={{ backgroundColor: 'var(--surface)' }}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.5 }}
-            whileHover={{ y: -5 }}
           >
-            <motion.h3 
-              className="text-2xl font-bold mb-6" 
+            <motion.h3
+              className="text-2xl font-bold mb-6"
               style={{ color: 'var(--text-primary)' }}
               whileHover={{ x: 5 }}
               transition={{ duration: 0.2 }}
             >
               Account Settings
             </motion.h3>
-            
+
             <div className="space-y-5">
-              <motion.div 
-                className="flex justify-between items-center pb-4 border-b" 
+              <div
+                className="flex justify-between items-center pb-4 border-b"
                 style={{ borderColor: 'var(--border)' }}
-                whileHover={{ scale: 1.02 }}
-                transition={{ duration: 0.2 }}
               >
                 <div>
                   <h4 className="font-semibold" style={{ color: 'var(--text-primary)' }}>Email Notifications</h4>
@@ -575,72 +566,64 @@ const Profile = () => {
                   <input type="checkbox" className="sr-only peer" defaultChecked />
                   <div className="w-12 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                 </label>
-              </motion.div>
-                <motion.div 
-                className="flex justify-between items-center pb-4 border-b" 
+              </div>
+              <div
+                className="flex justify-between items-center pb-4 border-b"
                 style={{ borderColor: 'var(--border)' }}
-                whileHover={{ scale: 1.02 }}
-                transition={{ duration: 0.2 }}
               >
                 <div>
                   <h4 className="font-semibold" style={{ color: 'var(--text-primary)' }}>Dark Mode</h4>
                   <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Switch between light and dark themes</p>
-                </div>                <label className="relative inline-flex items-center cursor-pointer">
-                  <input 
-                    type="checkbox" 
-                    className="sr-only peer" 
+                </div><label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="sr-only peer"
                     checked={isDark}
                     onChange={toggleTheme}
                   />
                   <div className="w-12 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600">
                   </div>
                 </label>
-              </motion.div>
-              
-              <motion.div 
+              </div>
+              <div
                 className="flex justify-between items-center"
-                whileHover={{ scale: 1.02 }}
-                transition={{ duration: 0.2 }}
               >
                 <div>
                   <h4 className="font-semibold text-red-500">Delete Account</h4>
                   <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Permanently remove your account and data</p>
                 </div>
-                <motion.button 
+                <motion.button
                   className="px-4 py-2 text-sm rounded-full bg-red-600 text-white"
-                  whileHover={{ scale: 1.05, backgroundColor: '#ff3333' }}
+                  whileHover={{ backgroundColor: '#ff3333' }}
                   whileTap={{ scale: 0.95 }}
                 >
                   Delete
                 </motion.button>
-              </motion.div>
+              </div>
             </div>
           </motion.div>
-          
+
           {/* Activity History Section */}
-          <motion.div 
-            className="bg-opacity-60 rounded-xl p-6 shadow-lg" 
+          <motion.div
+            className="bg-opacity-60 rounded-xl p-6 shadow-lg"
             style={{ backgroundColor: 'var(--surface)' }}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5, duration: 0.5 }}
-            whileHover={{ y: -5 }}
           >
-            <motion.h3 
-              className="text-2xl font-bold mb-6" 
+            <motion.h3
+              className="text-2xl font-bold mb-6"
               style={{ color: 'var(--text-primary)' }}
               whileHover={{ x: 5 }}
               transition={{ duration: 0.2 }}
             >
               Recent Activity
             </motion.h3>
-            
-            <motion.div 
+            <div
               className="space-y-3 min-h-[100px] flex items-center justify-center"
-              whileHover={{ scale: 1.01 }}
             >
-              <motion.p 
-                className="text-sm italic text-center py-3" 
+              <motion.p
+                className="text-sm italic text-center py-3"
                 style={{ color: 'var(--text-secondary)' }}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -648,19 +631,20 @@ const Profile = () => {
               >
                 No recent activities to show
               </motion.p>
-            </motion.div>
-          </motion.div>        </motion.div>
+            </div>
+          </motion.div>
+        </motion.div>
       </div>
-      
+
       {/* Password Change Modal */}
       {showPasswordModal && (
-        <motion.div 
+        <motion.div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
         >
-          <motion.div 
+          <motion.div
             className="bg-opacity-90 rounded-xl p-6 shadow-xl w-full max-w-md"
             style={{ backgroundColor: 'var(--surface)' }}
             initial={{ scale: 0.9, opacity: 0 }}
@@ -672,7 +656,6 @@ const Profile = () => {
                 <FaKey className="mr-2" /> Change Password
               </h3>
               <motion.button
-                whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
                 className="text-gray-500 hover:text-gray-700"
                 onClick={() => setShowPasswordModal(false)}
@@ -680,7 +663,7 @@ const Profile = () => {
                 &times;
               </motion.button>
             </div>
-            
+
             <form onSubmit={handleChangePassword} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
@@ -691,7 +674,7 @@ const Profile = () => {
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-opacity-50 transition-all"
-                  style={{ 
+                  style={{
                     borderColor: 'var(--border)',
                     backgroundColor: 'var(--input-background)',
                     color: 'var(--text-primary)',
@@ -699,7 +682,7 @@ const Profile = () => {
                   required
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
                   New Password
@@ -709,7 +692,7 @@ const Profile = () => {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-opacity-50 transition-all"
-                  style={{ 
+                  style={{
                     borderColor: 'var(--border)',
                     backgroundColor: 'var(--input-background)',
                     color: 'var(--text-primary)',
@@ -718,7 +701,7 @@ const Profile = () => {
                   minLength={6}
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
                   Confirm New Password
@@ -728,7 +711,7 @@ const Profile = () => {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-opacity-50 transition-all"
-                  style={{ 
+                  style={{
                     borderColor: 'var(--border)',
                     backgroundColor: 'var(--input-background)',
                     color: 'var(--text-primary)',
@@ -736,17 +719,16 @@ const Profile = () => {
                   required
                 />
               </div>
-              
+
               <div className="flex justify-end space-x-3 mt-6">
                 <motion.button
                   type="button"
                   className="px-4 py-2 rounded-full border"
-                  style={{ 
+                  style={{
                     color: 'var(--text-primary)',
                     borderColor: 'var(--border)',
                   }}
                   onClick={() => setShowPasswordModal(false)}
-                  whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   disabled={passwordLoading}
                 >
@@ -755,11 +737,10 @@ const Profile = () => {
                 <motion.button
                   type="submit"
                   className="px-4 py-2 rounded-full font-medium"
-                  style={{ 
+                  style={{
                     backgroundColor: 'var(--primary)',
                     color: 'var(--text-on-primary)'
                   }}
-                  whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   disabled={passwordLoading}
                 >
