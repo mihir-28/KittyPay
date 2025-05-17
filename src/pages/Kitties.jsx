@@ -307,10 +307,8 @@ const Kitties = () => {
 
   // Go back to the kitties list
   const handleBackToKitties = () => {
-    setSelectedKittyId(null);
-  };
-  return (
-    <div className="container mx-auto px-4 py-8 mt-6">
+    setSelectedKittyId(null);  };  return (
+    <div className="w-full mx-auto px-3 sm:px-6 md:px-10 py-10">
       {selectedKittyId ? (
         <KittyDetails kittyId={selectedKittyId} onBack={handleBackToKitties} />
       ) : (
@@ -339,15 +337,13 @@ const Kitties = () => {
               >
                 <FiPlus /> Create Kitty
               </button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {kitties.map(kitty => (
-                <motion.div
+            </div>          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {kitties.map(kitty => (                <motion.div
                   key={kitty.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="bg-[var(--surface)] p-6 rounded-xl shadow-sm border border-[var(--border)]"
+                  className="bg-[var(--surface)] p-4 sm:p-5 rounded-xl shadow-sm border border-[var(--border)]"
                 >
                   <h2 className="text-xl font-bold mb-2">{kitty.name}</h2>
                   <p className="text-[var(--text-secondary)] mb-4">{kitty.description}</p>
@@ -361,9 +357,7 @@ const Kitties = () => {
                       <p className="text-sm text-[var(--text-secondary)]">Your share</p>
                       <p className="text-2xl font-semibold">{kitty.currency || '$'}{calculateUserShare(kitty)}</p>
                     </div>
-                  </div>
-
-                  <div className="mb-4 pb-4 border-b border-[var(--border)]">
+                  </div>                  <div className="mb-3 pb-3 border-b border-[var(--border)]">
                     <div className="flex justify-between items-center mb-2">
                       <h3 className="font-semibold">Members ({kitty.members.length})</h3>
                       <button
@@ -373,7 +367,7 @@ const Kitties = () => {
                         <FiPlus size={14} /> Add
                       </button>
                     </div>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-1">
                       {kitty.members.map((member, idx) => (
                         <span
                           key={member.userId || member.email || idx}
@@ -448,15 +442,12 @@ const Kitties = () => {
                 </motion.div>
               ))}
             </div>
-          )}
-
-          {/* Create Kitty Modal */}
+          )}          {/* Create Kitty Modal */}
           {showCreateModal && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-              <motion.div
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">              <motion.div
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="bg-[var(--surface)] p-6 rounded-xl w-full max-w-md"
+                className="bg-[var(--surface)] p-5 sm:p-6 rounded-xl w-full max-w-md"
               >
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-xl font-bold">Create New Kitty</h2>
@@ -533,15 +524,12 @@ const Kitties = () => {
                 </form>
               </motion.div>
             </div>
-          )}
-
-          {/* Add Expense Modal */}
+          )}          {/* Add Expense Modal */}
           {showExpenseModal && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-              <motion.div
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">              <motion.div
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="bg-[var(--surface)] p-6 rounded-xl w-full max-w-md"
+                className="bg-[var(--surface)] p-5 sm:p-6 rounded-xl w-full max-w-md"
               >
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-xl font-bold">Add Expense to {currentKitty.name}</h2>
@@ -693,15 +681,12 @@ const Kitties = () => {
                 </form>
               </motion.div>
             </div>
-          )}
-
-          {/* Add Member Modal */}
+          )}          {/* Add Member Modal */}
           {showMemberModal && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-              <motion.div
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">              <motion.div
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="bg-[var(--surface)] p-6 rounded-xl w-full max-w-md"
+                className="bg-[var(--surface)] p-5 sm:p-6 rounded-xl w-full max-w-md"
               >
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-xl font-bold">Add Member to {currentKitty.name}</h2>
