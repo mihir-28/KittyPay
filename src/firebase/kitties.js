@@ -30,7 +30,7 @@ export const createKitty = async (userId, { name, description, userEmail, userNa
     const kittyRef = await addDoc(collection(db, "kitties"), {
       name,
       description,
-      currency: currency || "$", // Default to $ if no currency is provided
+      currency: currency || "₹", // Default to ₹ if no currency is provided
       createdBy: userId,
       createdAt: new Date(), // Use Date object here too for consistency
       members: [

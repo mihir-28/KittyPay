@@ -18,7 +18,7 @@ const Kitties = () => {
   // Form states
   const [kittyName, setKittyName] = useState("");
   const [kittyDescription, setKittyDescription] = useState("");
-  const [kittyCurrency, setKittyCurrency] = useState("$");
+  const [kittyCurrency, setKittyCurrency] = useState("₹");
   const [expenseAmount, setExpenseAmount] = useState("");
   const [expenseDescription, setExpenseDescription] = useState("");
   const [expenseParticipants, setExpenseParticipants] = useState([]);
@@ -99,11 +99,10 @@ const Kitties = () => {
       };
 
       setKitties([...kitties, newKitty]);
-      toast.success("Kitty created successfully!");
-      setShowCreateModal(false);
+      toast.success("Kitty created successfully!"); setShowCreateModal(false);
       setKittyName("");
       setKittyDescription("");
-      setKittyCurrency("$");
+      setKittyCurrency("₹");
     } catch (error) {
       console.error("Error creating kitty:", error);
       toast.error(error.message || "Failed to create kitty");
@@ -310,9 +309,8 @@ const Kitties = () => {
   const handleBackToKitties = () => {
     setSelectedKittyId(null);
   };
-
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8 mt-6">
       {selectedKittyId ? (
         <KittyDetails kittyId={selectedKittyId} onBack={handleBackToKitties} />
       ) : (
@@ -429,7 +427,10 @@ const Kitties = () => {
                       onClick={() => openExpenseModal(kitty)}
                       className="flex items-center gap-1 bg-[var(--background)] hover:bg-[var(--background-hover)] py-2 px-3 rounded-lg"
                     >
-                      <FiDollarSign /> Add Expense
+                      <span className="flex items-center">
+                        {kitty.currency || '$'}
+                      </span>
+                      <span className="ml-1">Add Expense</span>
                     </button>
                     <button
                       onClick={() => openMemberModal(kitty)}
@@ -503,8 +504,8 @@ const Kitties = () => {
                       onChange={e => setKittyCurrency(e.target.value)}
                       className="w-full px-4 py-2 bg-[var(--background)] border border-[var(--border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
                     >
-                      <option value="$">US Dollar ($)</option>
                       <option value="₹">Indian Rupee (₹)</option>
+                      <option value="$">US Dollar ($)</option>
                       <option value="€">Euro (€)</option>
                       <option value="£">British Pound (£)</option>
                       <option value="¥">Japanese Yen (¥)</option>
@@ -541,7 +542,8 @@ const Kitties = () => {
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 className="bg-[var(--surface)] p-6 rounded-xl w-full max-w-md"
-              >                <div className="flex justify-between items-center mb-4">
+              >
+                <div className="flex justify-between items-center mb-4">
                   <h2 className="text-xl font-bold">Add Expense to {currentKitty.name}</h2>
                   <button
                     onClick={() => {

@@ -146,11 +146,10 @@ const KittyDetails = ({ kittyId, onBack }) => {
       </div>
     );
   }
-
   if (!kitty) return null;
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8 mt-6">
       <button
         onClick={onBack}
         className="flex items-center mb-6 text-[var(--primary)] hover:underline"
@@ -201,13 +200,14 @@ const KittyDetails = ({ kittyId, onBack }) => {
         {kitty.expenses && kitty.expenses.length > 0 ? (
           <div className="bg-[var(--background)] rounded-lg overflow-hidden">
             <table className="w-full">
-              <thead className="bg-[var(--surface)]">                <tr>
-                <th className="py-3 px-4 text-left">Description</th>
-                <th className="py-3 px-4 text-left">Paid By</th>
-                <th className="py-3 px-4 text-left">Shared With</th>
-                <th className="py-3 px-4 text-right">Amount</th>
-                <th className="py-3 px-4 text-right">Date</th>
-              </tr>
+              <thead className="bg-[var(--surface)]">
+                <tr>
+                  <th className="py-3 px-4 text-left">Description</th>
+                  <th className="py-3 px-4 text-left">Paid By</th>
+                  <th className="py-3 px-4 text-left">Shared With</th>
+                  <th className="py-3 px-4 text-right">Amount</th>
+                  <th className="py-3 px-4 text-right">Date</th>
+                </tr>
               </thead>
               <tbody>
                 {kitty.expenses.map((expense, idx) => (
@@ -257,8 +257,8 @@ const KittyDetails = ({ kittyId, onBack }) => {
             <div
               key={balance.userId || idx}
               className={`p-4 rounded-lg ${balance.owes > 0 ? 'bg-red-50 dark:bg-red-900/10' :
-                  balance.owes < 0 ? 'bg-green-50 dark:bg-green-900/10' :
-                    'bg-[var(--background)]'
+                balance.owes < 0 ? 'bg-green-50 dark:bg-green-900/10' :
+                  'bg-[var(--background)]'
                 }`}
             >
               <div className="flex items-center justify-between mb-3">
