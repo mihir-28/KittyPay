@@ -6,7 +6,8 @@ import { FiPlus, FiTrash2, FiEdit2, FiDollarSign, FiUsers, FiX, FiEye } from "re
 import { createKitty, getUserKitties, addExpense, addMember } from "../firebase/kitties";
 import KittyDetails from "../components/KittyDetails";
 
-const Kitties = () => {  const { currentUser } = useAuth();
+const Kitties = () => {
+  const { currentUser } = useAuth();
   const [kitties, setKitties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -31,7 +32,7 @@ const Kitties = () => {  const { currentUser } = useAuth();
         try {
           setLoading(true);
           const userKitties = await getUserKitties(currentUser.uid);
-          
+
           // Format the kitties data for our UI
           const formattedKitties = userKitties.map(kitty => {
             // Find the current user in members and rename to "You"
@@ -41,13 +42,13 @@ const Kitties = () => {  const { currentUser } = useAuth();
               }
               return member;
             });
-            
+
             return {
               ...kitty,
               members: updatedMembers
             };
           });
-          
+
           setKitties(formattedKitties);
         } catch (error) {
           console.error("Error fetching kitties:", error);
@@ -57,18 +58,18 @@ const Kitties = () => {  const { currentUser } = useAuth();
         }
       }
     };
-    
+
     fetchKitties();
-  }, [currentUser]);  const handleCreateKitty = async (e) => {
+  }, [currentUser]); const handleCreateKitty = async (e) => {
     e.preventDefault();
-    
+
     if (!kittyName.trim()) {
       toast.error("Please enter a kitty name");
       return;
     }
-    
+
     const loadingToast = toast.loading("Creating kitty...");
-    
+
     try {
       const result = await createKitty(currentUser.uid, {
         name: kittyName,
@@ -77,11 +78,11 @@ const Kitties = () => {  const { currentUser } = useAuth();
         userEmail: currentUser.email,
         userName: currentUser.displayName
       });
-      
+
       if (result.error) {
         throw new Error(result.error.message || "Failed to create kitty");
       }
-      
+
       // Create a new kitty object for the UI until we refresh
       const newKitty = {
         id: result.id,
@@ -96,7 +97,7 @@ const Kitties = () => {  const { currentUser } = useAuth();
         ],
         expenses: []
       };
-      
+
       setKitties([...kitties, newKitty]);
       toast.success("Kitty created successfully!");
       setShowCreateModal(false);
@@ -109,35 +110,35 @@ const Kitties = () => {  const { currentUser } = useAuth();
     } finally {
       toast.dismiss(loadingToast);
     }
-  };  const handleAddExpense = async (e) => {
+  }; const handleAddExpense = async (e) => {
     e.preventDefault();
-      if (!expenseAmount || !expenseDescription || !expensePayer) {
+    if (!expenseAmount || !expenseDescription || !expensePayer) {
       toast.error("Please fill in all expense details");
       return;
     }
-    
+
     if (expenseParticipants.length === 0) {
       toast.error("Please select at least one participant");
       return;
     }
-    
+
     const loadingToast = toast.loading("Adding expense...");
-    
+
     try {
       // Get selected participants from the form
       const participants = expenseParticipants.map(participantId => {
-        const member = currentKitty.members.find(m => 
-          (m.userId && m.userId === participantId) || 
+        const member = currentKitty.members.find(m =>
+          (m.userId && m.userId === participantId) ||
           (!m.userId && m.email === participantId)
         );
         return member;
       }).filter(Boolean);
-        // Get the payer information
-      const payer = currentKitty.members.find(m => 
-        (m.userId === expensePayer) || 
+      // Get the payer information
+      const payer = currentKitty.members.find(m =>
+        (m.userId === expensePayer) ||
         (!m.userId && m.email === expensePayer)
       );
-      
+
       const result = await addExpense(currentKitty.id, {
         description: expenseDescription,
         amount: parseFloat(expenseAmount),
@@ -145,11 +146,11 @@ const Kitties = () => {  const { currentUser } = useAuth();
         paidById: payer.userId || payer.email, // ID of who paid
         participants: participants
       });
-      
+
       if (result.error) {
         throw new Error(result.error.message || "Failed to add expense");
       }
-      
+
       // Update the UI with the new expense
       const updatedKitties = kitties.map(kitty => {
         if (kitty.id === currentKitty.id) {
@@ -157,7 +158,7 @@ const Kitties = () => {  const { currentUser } = useAuth();
             ...result.expense,
             date: new Date()
           };
-          
+
           return {
             ...kitty,
             expenses: [...kitty.expenses, newExpense],
@@ -166,9 +167,9 @@ const Kitties = () => {  const { currentUser } = useAuth();
         }
         return kitty;
       });
-      
+
       setKitties(updatedKitties);
-      toast.success("Expense added successfully!");      setShowExpenseModal(false);
+      toast.success("Expense added successfully!"); setShowExpenseModal(false);
       setExpenseAmount("");
       setExpenseDescription("");
       setExpenseParticipants([]);
@@ -182,31 +183,31 @@ const Kitties = () => {  const { currentUser } = useAuth();
   };
   const handleAddMember = async (e) => {
     e.preventDefault();
-    
+
     if (!memberEmail) {
       toast.error("Please enter member email");
       return;
     }
-    
+
     if (currentKitty.members.some(member => member.email === memberEmail)) {
       toast.error("This member is already in the kitty");
       return;
     }
-    
+
     const loadingToast = toast.loading("Adding member...");
-    
+
     try {
       const memberName = memberEmail.split('@')[0]; // Simple name from email
-      
+
       const result = await addMember(currentKitty.id, {
         email: memberEmail,
         name: memberName
       });
-      
+
       if (result.error) {
         throw new Error(result.error.message || "Failed to add member");
       }
-      
+
       // Update the UI with the new member
       const updatedKitties = kitties.map(kitty => {
         if (kitty.id === currentKitty.id) {
@@ -217,7 +218,7 @@ const Kitties = () => {  const { currentUser } = useAuth();
         }
         return kitty;
       });
-      
+
       setKitties(updatedKitties);
       toast.success("Member added successfully!");
       setShowMemberModal(false);
@@ -228,10 +229,10 @@ const Kitties = () => {  const { currentUser } = useAuth();
     } finally {
       toast.dismiss(loadingToast);
     }
-  };  const openExpenseModal = (kitty) => {
+  }; const openExpenseModal = (kitty) => {
     setCurrentKitty(kitty);
     // Pre-select all members as participants by default
-    const allParticipantIds = kitty.members.map(member => 
+    const allParticipantIds = kitty.members.map(member =>
       member.userId || member.email
     );
     setExpenseParticipants(allParticipantIds);
@@ -246,23 +247,23 @@ const Kitties = () => {  const { currentUser } = useAuth();
   };
   const calculateUserShare = (kitty) => {
     if (!kitty.members.length) return 0;
-    
+
     // If the kitty doesn't have expenses with participants info, use the simple calculation
     if (!kitty.expenses || kitty.expenses.length === 0 || !kitty.expenses[0].participants) {
       return (kitty.totalAmount / kitty.members.length).toFixed(2);
     }
-    
+
     // Calculate based on the user's actual participation in expenses
     let userTotal = 0;
     kitty.expenses.forEach(expense => {
       // Check if participants are defined
       if (expense.participants) {
         // Check if current user is a participant in this expense
-        const isParticipant = expense.participants.some(participant => 
-          participant.userId === currentUser.uid || 
+        const isParticipant = expense.participants.some(participant =>
+          participant.userId === currentUser.uid ||
           (!participant.userId && participant.email === currentUser.email)
         );
-        
+
         if (isParticipant) {
           userTotal += expense.amount / expense.participants.length;
         }
@@ -271,10 +272,10 @@ const Kitties = () => {  const { currentUser } = useAuth();
         userTotal += expense.amount / kitty.members.length;
       }
     });
-    
+
     return userTotal.toFixed(2);
   };
-  
+
   // Handle participant selection
   const handleParticipantToggle = (participantId) => {
     setExpenseParticipants(prev => {
@@ -285,14 +286,14 @@ const Kitties = () => {  const { currentUser } = useAuth();
       }
     });
   };
-  
+
   // Select/deselect all participants
   const handleSelectAllParticipants = (select) => {
     if (!currentKitty) return;
-    
+
     if (select) {
       // Select all members
-      const allParticipantIds = currentKitty.members.map(member => 
+      const allParticipantIds = currentKitty.members.map(member =>
         member.userId || member.email
       );
       setExpenseParticipants(allParticipantIds);
@@ -352,8 +353,9 @@ const Kitties = () => {  const { currentUser } = useAuth();
                 >
                   <h2 className="text-xl font-bold mb-2">{kitty.name}</h2>
                   <p className="text-[var(--text-secondary)] mb-4">{kitty.description}</p>
-                  
-                  <div className="flex justify-between items-center mb-4 pb-4 border-b border-[var(--border)]">                    <div>
+
+                  <div className="flex justify-between items-center mb-4 pb-4 border-b border-[var(--border)]">
+                    <div>
                       <p className="text-sm text-[var(--text-secondary)]">Total</p>
                       <p className="text-2xl font-semibold">{kitty.currency || '$'}{kitty.totalAmount}</p>
                     </div>
@@ -362,11 +364,11 @@ const Kitties = () => {  const { currentUser } = useAuth();
                       <p className="text-2xl font-semibold">{kitty.currency || '$'}{calculateUserShare(kitty)}</p>
                     </div>
                   </div>
-                  
+
                   <div className="mb-4 pb-4 border-b border-[var(--border)]">
                     <div className="flex justify-between items-center mb-2">
                       <h3 className="font-semibold">Members ({kitty.members.length})</h3>
-                      <button 
+                      <button
                         onClick={() => openMemberModal(kitty)}
                         className="text-[var(--primary)] hover:underline text-sm flex items-center gap-1"
                       >
@@ -375,7 +377,7 @@ const Kitties = () => {  const { currentUser } = useAuth();
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {kitty.members.map((member, idx) => (
-                        <span 
+                        <span
                           key={member.userId || member.email || idx}
                           className="bg-[var(--background)] px-2 py-1 rounded-lg text-sm"
                         >
@@ -385,11 +387,11 @@ const Kitties = () => {  const { currentUser } = useAuth();
                       ))}
                     </div>
                   </div>
-                  
+
                   <div className="mb-4">
                     <div className="flex justify-between items-center mb-2">
                       <h3 className="font-semibold">Recent Expenses</h3>
-                      <button 
+                      <button
                         onClick={() => openExpenseModal(kitty)}
                         className="text-[var(--primary)] hover:underline text-sm flex items-center gap-1"
                       >
@@ -399,7 +401,7 @@ const Kitties = () => {  const { currentUser } = useAuth();
                     {(kitty.expenses || []).length > 0 ? (
                       <div className="space-y-2">
                         {(kitty.expenses || []).slice(0, 2).map((expense, idx) => (
-                          <div 
+                          <div
                             key={expense.id || idx}
                             className="flex justify-between items-center bg-[var(--background)] p-2 rounded-lg"
                           >                            <div>
@@ -421,7 +423,7 @@ const Kitties = () => {  const { currentUser } = useAuth();
                       </p>
                     )}
                   </div>
-                  
+
                   <div className="flex justify-center gap-3 mt-4">
                     <button
                       onClick={() => openExpenseModal(kitty)}
@@ -461,7 +463,7 @@ const Kitties = () => {  const { currentUser } = useAuth();
                     <FiX size={24} />
                   </button>
                 </div>
-                
+
                 <form onSubmit={handleCreateKitty}>
                   <div className="mb-4">
                     <label htmlFor="kittyName" className="block mb-2 text-sm font-medium">
@@ -477,7 +479,7 @@ const Kitties = () => {  const { currentUser } = useAuth();
                       required
                     />
                   </div>
-                    <div className="mb-4">
+                  <div className="mb-4">
                     <label htmlFor="kittyDescription" className="block mb-2 text-sm font-medium">
                       Description (optional)
                     </label>
@@ -511,7 +513,7 @@ const Kitties = () => {  const { currentUser } = useAuth();
                       <option value="C$">Canadian Dollar (C$)</option>
                     </select>
                   </div>
-                  
+
                   <div className="flex gap-3 justify-end">
                     <button
                       type="button"
@@ -541,21 +543,22 @@ const Kitties = () => {  const { currentUser } = useAuth();
                 className="bg-[var(--surface)] p-6 rounded-xl w-full max-w-md"
               >                <div className="flex justify-between items-center mb-4">
                   <h2 className="text-xl font-bold">Add Expense to {currentKitty.name}</h2>
-                  <button 
+                  <button
                     onClick={() => {
                       setShowExpenseModal(false);
                       setExpenseAmount("");
                       setExpenseDescription("");
                       setExpenseParticipants([]);
                       setExpensePayer("");
-                    }} 
+                    }}
                     className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                   >
                     <FiX size={24} />
                   </button>
                 </div>
-                
-                <form onSubmit={handleAddExpense}>                  <div className="mb-4">
+
+                <form onSubmit={handleAddExpense}>
+                  <div className="mb-4">
                     <label htmlFor="expenseDescription" className="block mb-2 text-sm font-medium">
                       Description*
                     </label>
@@ -569,7 +572,7 @@ const Kitties = () => {  const { currentUser } = useAuth();
                       required
                     />
                   </div>
-                  
+
                   <div className="mb-4">
                     <label htmlFor="expensePayer" className="block mb-2 text-sm font-medium">
                       Paid by*
@@ -583,8 +586,8 @@ const Kitties = () => {  const { currentUser } = useAuth();
                     >
                       <option value="">Select who paid</option>
                       {currentKitty.members.map((member, idx) => (
-                        <option 
-                          key={member.userId || member.email || idx} 
+                        <option
+                          key={member.userId || member.email || idx}
                           value={member.userId || member.email}
                         >
                           {member.name} {member.isOwner && "(Owner)"}
@@ -592,7 +595,7 @@ const Kitties = () => {  const { currentUser } = useAuth();
                       ))}
                     </select>
                   </div>
-                  
+
                   <div className="mb-4">
                     <label htmlFor="expenseAmount" className="block mb-2 text-sm font-medium">
                       Amount*
@@ -614,7 +617,7 @@ const Kitties = () => {  const { currentUser } = useAuth();
                       />
                     </div>
                   </div>
-                  
+
                   <div className="mb-6">
                     <div className="flex justify-between items-center mb-2">
                       <label className="block text-sm font-medium">
@@ -640,7 +643,7 @@ const Kitties = () => {  const { currentUser } = useAuth();
                     </div>
                     <div className="bg-[var(--background)] p-2 rounded-lg max-h-40 overflow-y-auto">
                       {currentKitty.members.map((member, idx) => (
-                        <div 
+                        <div
                           key={member.userId || member.email || idx}
                           className="flex items-center p-2 hover:bg-[var(--surface)] rounded-md"
                         >
@@ -651,7 +654,7 @@ const Kitties = () => {  const { currentUser } = useAuth();
                             onChange={() => handleParticipantToggle(member.userId || member.email)}
                             className="w-4 h-4 text-[var(--primary)] rounded"
                           />
-                          <label 
+                          <label
                             htmlFor={`participant-${idx}`}
                             className="ml-2 w-full cursor-pointer"
                           >
@@ -664,7 +667,7 @@ const Kitties = () => {  const { currentUser } = useAuth();
                       The expense will be split equally among selected people
                     </p>
                   </div>
-                    <div className="flex gap-3 justify-end">
+                  <div className="flex gap-3 justify-end">
                     <button
                       type="button"
                       onClick={() => {
@@ -704,7 +707,7 @@ const Kitties = () => {  const { currentUser } = useAuth();
                     <FiX size={24} />
                   </button>
                 </div>
-                
+
                 <form onSubmit={handleAddMember}>
                   <div className="mb-6">
                     <label htmlFor="memberEmail" className="block mb-2 text-sm font-medium">
@@ -723,7 +726,7 @@ const Kitties = () => {  const { currentUser } = useAuth();
                       We'll send them an invitation to join this kitty
                     </p>
                   </div>
-                  
+
                   <div className="flex gap-3 justify-end">
                     <button
                       type="button"
