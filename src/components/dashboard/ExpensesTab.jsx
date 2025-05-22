@@ -1,12 +1,55 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import {
-  BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, 
+  BarChart, Bar, PieChart, Pie, Cell, Sector, XAxis, YAxis, CartesianGrid, 
   ResponsiveContainer, Tooltip as RechartsTooltip, Legend
 } from 'recharts';
 import { FiPieChart, FiUsers, FiArrowUp } from 'react-icons/fi';
 
 const ExpensesTab = ({ dashboardData, categoryData, COLORS, formatCategoryName }) => {
+  // Custom active shape for the pie chart to show labels
+  const renderActiveShape = (props) => {
+    const { 
+      cx, cy, innerRadius, outerRadius, startAngle, endAngle,
+      fill, payload, value, percent
+    } = props;
+    
+    // Calculate position for the label
+    const midAngle = startAngle + (endAngle - startAngle) / 2;
+    const radius = outerRadius + 25;
+    const x = cx + radius * Math.cos(-midAngle * Math.PI / 180);
+    const y = cy + radius * Math.sin(-midAngle * Math.PI / 180);
+    
+    // Show all labels regardless of size
+    return (
+      <g>
+        {/* The slice */}
+        <Sector
+          cx={cx}
+          cy={cy}
+          innerRadius={innerRadius}
+          outerRadius={outerRadius}
+          startAngle={startAngle}
+          endAngle={endAngle}
+          fill={fill}
+        />
+        
+        {/* The label */}
+        <text 
+          x={x} 
+          y={y} 
+          fill={fill}
+          textAnchor={x > cx ? 'start' : 'end'} 
+          dominantBaseline="central"
+          fontSize="12"
+          fontWeight="500"
+        >
+          {payload.name}
+        </text>
+      </g>
+    );
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Left Column - Full Category Breakdown */}
@@ -24,33 +67,50 @@ const ExpensesTab = ({ dashboardData, categoryData, COLORS, formatCategoryName }
           <>
             <div className="h-64 flex justify-center">
               <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
+                <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
                   <Pie
                     data={categoryData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
-                    paddingAngle={5}
+                    innerRadius={55}
+                    outerRadius={85}
+                    paddingAngle={0}
                     dataKey="value"
                     labelLine={false}
+                    activeShape={renderActiveShape}
+                    activeIndex={categoryData.map((_, i) => i)} // Make all slices active to show all labels
                   >
                     {categoryData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
                   <RechartsTooltip 
-                    formatter={(value) => [`₹${value.toFixed(2)}`, 'Amount']}
+                    formatter={(value, name, props) => {
+                      const entry = props.payload && props.payload.length > 0 ? props.payload[0] : {};
+                      const totalValue = categoryData.reduce((sum, item) => sum + item.value, 0);
+                      const percentage = totalValue > 0 ? (value / totalValue) * 100 : 0;
+                      
+                      return [
+                        <div className="flex flex-col">
+                          <span className="font-medium">{entry.name}</span>
+                          <span>{`₹${value.toFixed(2)}`}</span>
+                          <span className="text-xs text-[var(--text-secondary)]">
+                            {`${percentage.toFixed(1)}% of total`}
+                          </span>
+                        </div>,
+                        null
+                      ];
+                    }}
                     contentStyle={{ 
                       backgroundColor: 'var(--surface)',
                       border: '1px solid var(--border)',
                       borderRadius: '8px',
-                      color: 'var(--text-primary)'
+                      color: 'var(--text-primary)',
+                      padding: '8px 12px'
                     }}
                     itemStyle={{ color: 'var(--text-primary)' }}
-                    labelStyle={{ color: 'var(--text-primary)' }}
+                    labelStyle={{ display: 'none' }}
                   />
-                  <Legend />
                 </PieChart>
               </ResponsiveContainer>
             </div>
