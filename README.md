@@ -40,7 +40,7 @@ Check out the live version at: [https://kittypay.netlify.app](https://kittypay.n
 - **Beautiful UI** - Clean, intuitive interface with smooth animations
 - **Dark & Light Modes** - Easy on the eyes, day or night
 - **Responsive Design** - Works flawlessly on all devices from mobile to desktop
-- **PWA Support** - Install as a native app on your device
+- **PWA Support** - Install as a native app on your device (Coming Soon)
 
 ## 🔥 Firebase Integration
 
@@ -138,24 +138,6 @@ KittyPay is a Progressive Web App (PWA) which means you can:
 - Use it offline
 - Receive push notifications (coming soon)
 - Enjoy fast loading times with service worker caching
-
-## 🗺️ Roadmap
-
-- **Q3 2025**
-  - Receipt scanning with OCR
-  - Recurring expense automation
-  - Mobile number-based user tagging
-  
-- **Q4 2025**
-  - UPI integration for direct payments
-  - Expense analytics and budget insights
-  - WhatsApp integration for sharing expenses
-  
-- **2026**
-  - Voice input for expense entry
-  - Group chat functionality
-  - Expense reminders and notifications
-  - Advanced reporting and tax categories
 
 ## 🐛 Bug Reporting
 
