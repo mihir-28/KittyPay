@@ -45,20 +45,21 @@ const Home = () => {
                     Get Started <FaArrowRight className="ml-2" size={18} />
                   </button>
                 </Link>
-                <Link to="/how-it-works">
-                  <button
-                    className="px-6 py-3 rounded-lg transition-colors"
-                    style={{
-                      border: '1px solid var(--primary)',
-                      color: 'var(--primary)',
-                      backgroundColor: 'transparent'
-                    }}
-                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'var(--primary-light)'}
-                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                  >
-                    How It Works
-                  </button>
-                </Link>
+                <button
+  onClick={() => {
+    document.getElementById('how-it-works').scrollIntoView({ behavior: 'smooth' });
+  }}
+  className="px-6 py-3 rounded-lg transition-colors"
+  style={{
+    border: '1px solid var(--primary)',
+    color: 'var(--primary)',
+    backgroundColor: 'transparent'
+  }}
+  onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'var(--primary-light)'}
+  onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+>
+  How It Works
+</button>
               </div>
             </div>
           </div>
@@ -167,7 +168,7 @@ const Home = () => {
       </section>
 
       {/* How It Works Section */}
-      <section className="py-16 md:py-24" style={{ backgroundColor: 'var(--surface-alt)' }}>
+      <section id="how-it-works" className="py-16 md:py-24" style={{ backgroundColor: 'var(--surface-alt)' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
