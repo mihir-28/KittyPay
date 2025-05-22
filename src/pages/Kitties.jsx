@@ -24,6 +24,8 @@ const Kitties = () => {
   const [expenseParticipants, setExpenseParticipants] = useState([]);
   const [expensePayer, setExpensePayer] = useState(""); // Who paid for the expense
   const [memberEmail, setMemberEmail] = useState("");
+  const [expenseCategory, setExpenseCategory] = useState("");
+  const [expenseNotes, setExpenseNotes] = useState("");
 
   // Fetch kitties from Firebase
   useEffect(() => {
@@ -60,7 +62,9 @@ const Kitties = () => {
     };
 
     fetchKitties();
-  }, [currentUser]); const handleCreateKitty = async (e) => {
+  }, [currentUser]);
+
+  const handleCreateKitty = async (e) => {
     e.preventDefault();
 
     if (!kittyName.trim()) {
@@ -99,7 +103,8 @@ const Kitties = () => {
       };
 
       setKitties([...kitties, newKitty]);
-      toast.success("Kitty created successfully!"); setShowCreateModal(false);
+      toast.success("Kitty created successfully!");
+      setShowCreateModal(false);
       setKittyName("");
       setKittyDescription("");
       setKittyCurrency("₹");
@@ -109,10 +114,12 @@ const Kitties = () => {
     } finally {
       toast.dismiss(loadingToast);
     }
-  }; const handleAddExpense = async (e) => {
+  };
+
+  const handleAddExpense = async (e) => {
     e.preventDefault();
-    if (!expenseAmount || !expenseDescription || !expensePayer) {
-      toast.error("Please fill in all expense details");
+    if (!expenseAmount || !expenseDescription || !expensePayer || !expenseCategory) {
+      toast.error("Please fill in all required expense details");
       return;
     }
 
@@ -141,6 +148,8 @@ const Kitties = () => {
       const result = await addExpense(currentKitty.id, {
         description: expenseDescription,
         amount: parseFloat(expenseAmount),
+        category: expenseCategory,
+        notes: expenseNotes,
         paidBy: payer.name, // Display name of who paid
         paidById: payer.userId || payer.email, // ID of who paid
         participants: participants
@@ -168,9 +177,12 @@ const Kitties = () => {
       });
 
       setKitties(updatedKitties);
-      toast.success("Expense added successfully!"); setShowExpenseModal(false);
+      toast.success("Expense added successfully!");
+      setShowExpenseModal(false);
       setExpenseAmount("");
       setExpenseDescription("");
+      setExpenseCategory("");
+      setExpenseNotes("");
       setExpenseParticipants([]);
       setExpensePayer("");
     } catch (error) {
@@ -180,6 +192,7 @@ const Kitties = () => {
       toast.dismiss(loadingToast);
     }
   };
+
   const handleAddMember = async (e) => {
     e.preventDefault();
 
@@ -228,7 +241,9 @@ const Kitties = () => {
     } finally {
       toast.dismiss(loadingToast);
     }
-  }; const openExpenseModal = (kitty) => {
+  };
+
+  const openExpenseModal = (kitty) => {
     setCurrentKitty(kitty);
     // Pre-select all members as participants by default
     const allParticipantIds = kitty.members.map(member =>
@@ -237,13 +252,17 @@ const Kitties = () => {
     setExpenseParticipants(allParticipantIds);
     // Set current user as the default payer
     setExpensePayer(currentUser.uid);
+    setExpenseCategory("");
+    setExpenseNotes("");
     setShowExpenseModal(true);
   };
+
   const openMemberModal = (kitty) => {
     setCurrentKitty(kitty);
     setMemberEmail("");
     setShowMemberModal(true);
   };
+
   const calculateUserShare = (kitty) => {
     if (!kitty.members.length) return 0;
 
@@ -300,14 +319,19 @@ const Kitties = () => {
       // Deselect all
       setExpenseParticipants([]);
     }
-  };// View a specific kitty's details
+  };
+
+  // View a specific kitty's details
   const viewKittyDetails = (kittyId) => {
     setSelectedKittyId(kittyId);
   };
 
   // Go back to the kitties list
   const handleBackToKitties = () => {
-    setSelectedKittyId(null);  };  return (
+    setSelectedKittyId(null);
+  };
+
+  return (
     <div className="w-full mx-auto px-3 sm:px-6 md:px-10 py-10">
       {selectedKittyId ? (
         <KittyDetails kittyId={selectedKittyId} onBack={handleBackToKitties} />
@@ -337,9 +361,11 @@ const Kitties = () => {
               >
                 <FiPlus /> Create Kitty
               </button>
-            </div>          ) : (
+            </div>
+          ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {kitties.map(kitty => (                <motion.div
+              {kitties.map(kitty => (
+                <motion.div
                   key={kitty.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -357,7 +383,9 @@ const Kitties = () => {
                       <p className="text-sm text-[var(--text-secondary)]">Your share</p>
                       <p className="text-2xl font-semibold">{kitty.currency || '$'}{calculateUserShare(kitty)}</p>
                     </div>
-                  </div>                  <div className="mb-3 pb-3 border-b border-[var(--border)]">
+                  </div>
+
+                  <div className="mb-3 pb-3 border-b border-[var(--border)]">
                     <div className="flex justify-between items-center mb-2">
                       <h3 className="font-semibold">Members ({kitty.members.length})</h3>
                       <button
@@ -396,9 +424,26 @@ const Kitties = () => {
                           <div
                             key={expense.id || idx}
                             className="flex justify-between items-center bg-[var(--background)] p-2 rounded-lg"
-                          >                            <div>
+                          >
+                            <div>
                               <p className="text-sm font-medium">{expense.description}</p>
-                              <p className="text-xs text-[var(--text-secondary)]">Paid by {expense.paidBy}</p>
+                              <p className="text-xs text-[var(--text-secondary)]">
+                                {expense.category && (
+                                  <span className="inline-block mr-1">
+                                    {expense.category === 'food' && '🍔'}
+                                    {expense.category === 'groceries' && '🛒'}
+                                    {expense.category === 'transport' && '🚗'}
+                                    {expense.category === 'accommodation' && '🏠'}
+                                    {expense.category === 'entertainment' && '🎭'}
+                                    {expense.category === 'shopping' && '🛍️'}
+                                    {expense.category === 'utilities' && '💡'}
+                                    {expense.category === 'medical' && '🏥'}
+                                    {expense.category === 'travel' && '✈️'}
+                                    {expense.category === 'other' && '📦'}
+                                  </span>
+                                )}
+                                Paid by {expense.paidBy}
+                              </p>
                             </div>
                             <p className="font-semibold">{kitty.currency || '$'}{expense.amount}</p>
                           </div>
@@ -442,9 +487,11 @@ const Kitties = () => {
                 </motion.div>
               ))}
             </div>
-          )}          {/* Create Kitty Modal */}
+          )}
+
           {showCreateModal && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">              <motion.div
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+              <motion.div
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 className="bg-[var(--surface)] p-5 sm:p-6 rounded-xl w-full max-w-md"
@@ -524,20 +571,25 @@ const Kitties = () => {
                 </form>
               </motion.div>
             </div>
-          )}          {/* Add Expense Modal */}
+          )}
+
           {showExpenseModal && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">              <motion.div
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50 overflow-y-auto">
+              <motion.div
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="bg-[var(--surface)] p-5 sm:p-6 rounded-xl w-full max-w-md"
+                className="bg-[var(--surface)] rounded-xl w-full max-w-xl my-4 overflow-hidden"
               >
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-bold">Add Expense to {currentKitty.name}</h2>
+                {/* Modal Header */}
+                <div className="flex justify-between items-center p-4 sm:p-5 border-b border-[var(--border)]">
+                  <h2 className="text-xl font-bold">Add Expense</h2>
                   <button
                     onClick={() => {
                       setShowExpenseModal(false);
                       setExpenseAmount("");
                       setExpenseDescription("");
+                      setExpenseCategory("");
+                      setExpenseNotes("");
                       setExpenseParticipants([]);
                       setExpensePayer("");
                     }}
@@ -547,143 +599,200 @@ const Kitties = () => {
                   </button>
                 </div>
 
-                <form onSubmit={handleAddExpense}>
-                  <div className="mb-4">
-                    <label htmlFor="expenseDescription" className="block mb-2 text-sm font-medium">
-                      Description*
-                    </label>
-                    <input
-                      type="text"
-                      id="expenseDescription"
-                      value={expenseDescription}
-                      onChange={e => setExpenseDescription(e.target.value)}
-                      className="w-full px-4 py-2 bg-[var(--background)] border border-[var(--border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
-                      placeholder="Dinner, Groceries, etc."
-                      required
-                    />
-                  </div>
-
-                  <div className="mb-4">
-                    <label htmlFor="expensePayer" className="block mb-2 text-sm font-medium">
-                      Paid by*
-                    </label>
-                    <select
-                      id="expensePayer"
-                      value={expensePayer}
-                      onChange={e => setExpensePayer(e.target.value)}
-                      className="w-full px-4 py-2 bg-[var(--background)] border border-[var(--border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
-                      required
-                    >
-                      <option value="">Select who paid</option>
-                      {currentKitty.members.map((member, idx) => (
-                        <option
-                          key={member.userId || member.email || idx}
-                          value={member.userId || member.email}
-                        >
-                          {member.name} {member.isOwner && "(Owner)"}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="mb-4">
-                    <label htmlFor="expenseAmount" className="block mb-2 text-sm font-medium">
-                      Amount*
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <span className="text-[var(--text-secondary)]">{currentKitty.currency || '$'}</span>
-                      </div>
-                      <input
-                        type="number"
-                        id="expenseAmount"
-                        value={expenseAmount}
-                        onChange={e => setExpenseAmount(e.target.value)}
-                        className="w-full pl-8 pr-4 py-2 bg-[var(--background)] border border-[var(--border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
-                        placeholder="0.00"
-                        min="0.01"
-                        step="0.01"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="mb-6">
-                    <div className="flex justify-between items-center mb-2">
-                      <label className="block text-sm font-medium">
-                        Who's involved?*
-                      </label>
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => handleSelectAllParticipants(true)}
-                          className="text-xs text-[var(--primary)] hover:underline"
-                        >
-                          Select All
-                        </button>
-                        <span className="text-xs">|</span>
-                        <button
-                          type="button"
-                          onClick={() => handleSelectAllParticipants(false)}
-                          className="text-xs text-[var(--primary)] hover:underline"
-                        >
-                          Deselect All
-                        </button>
-                      </div>
-                    </div>
-                    <div className="bg-[var(--background)] p-2 rounded-lg max-h-40 overflow-y-auto">
-                      {currentKitty.members.map((member, idx) => (
-                        <div
-                          key={member.userId || member.email || idx}
-                          className="flex items-center p-2 hover:bg-[var(--surface)] rounded-md"
-                        >
-                          <input
-                            type="checkbox"
-                            id={`participant-${idx}`}
-                            checked={expenseParticipants.includes(member.userId || member.email)}
-                            onChange={() => handleParticipantToggle(member.userId || member.email)}
-                            className="w-4 h-4 text-[var(--primary)] rounded"
-                          />
-                          <label
-                            htmlFor={`participant-${idx}`}
-                            className="ml-2 w-full cursor-pointer"
-                          >
-                            {member.name} {member.isOwner && "(Owner)"}
+                {/* Modal Body */}
+                <div className="p-4 sm:p-5">
+                  <form onSubmit={handleAddExpense} className="max-h-[60vh] overflow-y-auto px-0.5">
+                    {/* Two-column layout for larger screens */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Left column */}
+                      <div>
+                        <div className="mb-3 sm:mb-4">
+                          <label htmlFor="expenseDescription" className="block mb-1 sm:mb-2 text-sm font-medium">
+                            Description*
                           </label>
+                          <input
+                            type="text"
+                            id="expenseDescription"
+                            value={expenseDescription}
+                            onChange={e => setExpenseDescription(e.target.value)}
+                            className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--border)] rounded-lg focus:outline-none focus:ring-1 focus:ring-[var(--primary)] focus:border-[var(--primary)]"
+                            placeholder="Short title for the expense"
+                            required
+                          />
                         </div>
-                      ))}
+
+                        <div className="mb-3 sm:mb-4">
+                          <label htmlFor="expenseCategory" className="block mb-1 sm:mb-2 text-sm font-medium">
+                            Category*
+                          </label>
+                          <select
+                            id="expenseCategory"
+                            value={expenseCategory}
+                            onChange={e => setExpenseCategory(e.target.value)}
+                            className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--border)] rounded-lg focus:outline-none focus:ring-1 focus:ring-[var(--primary)] focus:border-[var(--primary)]"
+                            required
+                          >
+                            <option value="">Select a category</option>
+                            <option value="food">🍔 Food & Dining</option>
+                            <option value="groceries">🛒 Groceries</option>
+                            <option value="transport">🚗 Transportation</option>
+                            <option value="accommodation">🏠 Accommodation</option>
+                            <option value="entertainment">🎭 Entertainment</option>
+                            <option value="shopping">🛍️ Shopping</option>
+                            <option value="utilities">💡 Utilities</option>
+                            <option value="medical">🏥 Medical</option>
+                            <option value="travel">✈️ Travel</option>
+                            <option value="other">📦 Other</option>
+                          </select>
+                        </div>
+
+                        <div className="mb-3 sm:mb-4">
+                          <label htmlFor="expensePayer" className="block mb-1 sm:mb-2 text-sm font-medium">
+                            Paid by*
+                          </label>
+                          <select
+                            id="expensePayer"
+                            value={expensePayer}
+                            onChange={e => setExpensePayer(e.target.value)}
+                            className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--border)] rounded-lg focus:outline-none focus:ring-1 focus:ring-[var(--primary)] focus:border-[var(--primary)]"
+                            required
+                          >
+                            <option value="">Select who paid</option>
+                            {currentKitty.members.map((member, idx) => (
+                              <option
+                                key={member.userId || member.email || idx}
+                                value={member.userId || member.email}
+                              >
+                                {member.name} {member.isOwner && "(Owner)"}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="mb-3 sm:mb-4">
+                          <label htmlFor="expenseAmount" className="block mb-1 sm:mb-2 text-sm font-medium">
+                            Amount*
+                          </label>
+                          <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                              <span className="text-[var(--text-secondary)]">{currentKitty.currency || '$'}</span>
+                            </div>
+                            <input
+                              type="number"
+                              id="expenseAmount"
+                              value={expenseAmount}
+                              onChange={e => setExpenseAmount(e.target.value)}
+                              className="w-full pl-8 pr-3 py-2 bg-[var(--background)] border border-[var(--border)] rounded-lg focus:outline-none focus:ring-1 focus:ring-[var(--primary)] focus:border-[var(--primary)]"
+                              placeholder="0.00"
+                              min="0.01"
+                              step="0.01"
+                              required
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Right column */}
+                      <div>
+                        <div className="mb-3 sm:mb-4">
+                          <label htmlFor="expenseNotes" className="block mb-1 sm:mb-2 text-sm font-medium">
+                            Notes (optional)
+                          </label>
+                          <textarea
+                            id="expenseNotes"
+                            value={expenseNotes}
+                            onChange={e => setExpenseNotes(e.target.value)}
+                            className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--border)] rounded-lg focus:outline-none focus:ring-1 focus:ring-[var(--primary)] focus:border-[var(--primary)]"
+                            placeholder="Additional details"
+                            rows={2}
+                          />
+                        </div>
+
+                        <div>
+                          <div className="flex justify-between items-center mb-1 sm:mb-2">
+                            <label className="block text-sm font-medium">
+                              Who's involved?*
+                            </label>
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => handleSelectAllParticipants(true)}
+                                className="text-xs text-[var(--primary)] hover:underline"
+                              >
+                                All
+                              </button>
+                              <span className="text-xs">|</span>
+                              <button
+                                type="button"
+                                onClick={() => handleSelectAllParticipants(false)}
+                                className="text-xs text-[var(--primary)] hover:underline"
+                              >
+                                None
+                              </button>
+                            </div>
+                          </div>
+                          <div className="bg-[var(--background)] p-1.5 rounded-lg max-h-28 sm:max-h-32 overflow-y-auto mb-1 sm:mb-2 border border-[var(--border)]">
+                            {currentKitty.members.map((member, idx) => (
+                              <div
+                                key={member.userId || member.email || idx}
+                                className="flex items-center p-1.5 hover:bg-[var(--surface)] rounded-md"
+                              >
+                                <input
+                                  type="checkbox"
+                                  id={`participant-${idx}`}
+                                  checked={expenseParticipants.includes(member.userId || member.email)}
+                                  onChange={() => handleParticipantToggle(member.userId || member.email)}
+                                  className="w-4 h-4 text-[var(--primary)] rounded"
+                                />
+                                <label
+                                  htmlFor={`participant-${idx}`}
+                                  className="ml-2 w-full cursor-pointer text-sm truncate"
+                                >
+                                  {member.name} {member.isOwner && "(Owner)"}
+                                </label>
+                              </div>
+                            ))}
+                          </div>
+                          <p className="text-xs text-[var(--text-secondary)]">
+                            Split equally among selected people
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                    <p className="mt-2 text-xs text-[var(--text-secondary)]">
-                      The expense will be split equally among selected people
-                    </p>
-                  </div>
-                  <div className="flex gap-3 justify-end">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowExpenseModal(false);
-                        setExpenseAmount("");
-                        setExpenseDescription("");
-                        setExpenseParticipants([]);
-                        setExpensePayer("");
-                      }}
-                      className="px-4 py-2 border border-[var(--border)] rounded-lg hover:bg-[var(--background)]"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      className="px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:opacity-90"
-                    >
-                      Add Expense
-                    </button>
-                  </div>
-                </form>
+
+                    {/* Footer with action buttons */}
+                    <div className="flex gap-3 justify-end mt-5 sm:mt-6">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowExpenseModal(false);
+                          setExpenseAmount("");
+                          setExpenseDescription("");
+                          setExpenseCategory("");
+                          setExpenseNotes("");
+                          setExpenseParticipants([]);
+                          setExpensePayer("");
+                        }}
+                        className="px-3 py-2 border border-[var(--border)] rounded-lg hover:bg-[var(--background)]"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:opacity-90"
+                      >
+                        Add Expense
+                      </button>
+                    </div>
+                  </form>
+                </div>
               </motion.div>
             </div>
-          )}          {/* Add Member Modal */}
+          )}
+
           {showMemberModal && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">              <motion.div
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+              <motion.div
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 className="bg-[var(--surface)] p-5 sm:p-6 rounded-xl w-full max-w-md"

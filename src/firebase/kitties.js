@@ -95,7 +95,7 @@ export const getUserKitties = async (userId) => {
  * @param {Object} expenseData - The expense data
  * @returns {Promise<Object>} - Result of the operation
  */
-export const addExpense = async (kittyId, { description, amount, paidBy, paidById, participants }) => {
+export const addExpense = async (kittyId, { description, amount, category, notes, paidBy, paidById, participants }) => {
   try {
     const kittyRef = doc(db, "kitties", kittyId);
     const kittyDoc = await getDoc(kittyRef);
@@ -122,6 +122,8 @@ export const addExpense = async (kittyId, { description, amount, paidBy, paidByI
       id: `exp_${Date.now()}`,
       description,
       amount: parsedAmount,
+      category,
+      notes: notes || "",
       paidBy,
       paidById,
       participants: expenseParticipants,

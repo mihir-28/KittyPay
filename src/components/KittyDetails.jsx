@@ -258,6 +258,7 @@ const KittyDetails = ({ kittyId, onBack }) => {
                     <thead className="bg-[var(--surface)]">
                       <tr>
                         <th className="py-3 px-4 text-left">Description</th>
+                        <th className="py-3 px-4 text-left">Category</th>
                         <th className="py-3 px-4 text-left">Paid By</th>
                         <th className="py-3 px-4 text-left">Shared With</th>
                         <th className="py-3 px-4 text-right">Amount</th>
@@ -267,7 +268,33 @@ const KittyDetails = ({ kittyId, onBack }) => {
                     <tbody>
                       {kitty.expenses.map((expense, idx) => (
                         <tr key={expense.id || idx} className="border-t border-[var(--border)]">
-                          <td className="py-3 px-4">{expense.description}</td>
+                          <td className="py-3 px-4">
+                            {expense.description}
+                            {expense.notes && (
+                              <div className="text-xs text-[var(--text-secondary)] mt-1">
+                                {expense.notes}
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-3 px-4">
+                            {expense.category ? (
+                              <span className="inline-flex items-center">
+                                {expense.category === 'food' && '🍔 Food & Dining'}
+                                {expense.category === 'groceries' && '🛒 Groceries'}
+                                {expense.category === 'transport' && '🚗 Transportation'}
+                                {expense.category === 'accommodation' && '🏠 Accommodation'}
+                                {expense.category === 'entertainment' && '🎭 Entertainment'}
+                                {expense.category === 'shopping' && '🛍️ Shopping'}
+                                {expense.category === 'utilities' && '💡 Utilities'}
+                                {expense.category === 'medical' && '🏥 Medical'}
+                                {expense.category === 'travel' && '✈️ Travel'}
+                                {expense.category === 'other' && '📦 Other'}
+                                {!['food', 'groceries', 'transport', 'accommodation', 'entertainment', 'shopping', 'utilities', 'medical', 'travel', 'other'].includes(expense.category) && expense.category}
+                              </span>
+                            ) : (
+                              <span className="text-sm text-[var(--text-secondary)]">No category</span>
+                            )}
+                          </td>
                           <td className="py-3 px-4">{expense.paidBy}</td>
                           <td className="py-3 px-4">
                             {expense.participants ? (
@@ -306,6 +333,25 @@ const KittyDetails = ({ kittyId, onBack }) => {
                       </div>
 
                       <div className="space-y-2">
+                        {expense.category && (
+                          <div className="flex justify-between">
+                            <span className="text-sm text-[var(--text-secondary)]">Category</span>
+                            <span className="text-sm font-medium">
+                              {expense.category === 'food' && '🍔 Food & Dining'}
+                              {expense.category === 'groceries' && '🛒 Groceries'}
+                              {expense.category === 'transport' && '🚗 Transportation'}
+                              {expense.category === 'accommodation' && '🏠 Accommodation'}
+                              {expense.category === 'entertainment' && '🎭 Entertainment'}
+                              {expense.category === 'shopping' && '🛍️ Shopping'}
+                              {expense.category === 'utilities' && '💡 Utilities'}
+                              {expense.category === 'medical' && '🏥 Medical'}
+                              {expense.category === 'travel' && '✈️ Travel'}
+                              {expense.category === 'other' && '📦 Other'}
+                              {!['food', 'groceries', 'transport', 'accommodation', 'entertainment', 'shopping', 'utilities', 'medical', 'travel', 'other'].includes(expense.category) && expense.category}
+                            </span>
+                          </div>
+                        )}
+
                         <div className="flex justify-between">
                           <span className="text-sm text-[var(--text-secondary)]">Paid by</span>
                           <span className="text-sm font-medium">{expense.paidBy}</span>
@@ -329,6 +375,13 @@ const KittyDetails = ({ kittyId, onBack }) => {
                             )}
                           </div>
                         </div>
+
+                        {expense.notes && (
+                          <div className="flex flex-col pt-2 mt-2 border-t border-[var(--border)]">
+                            <span className="text-sm text-[var(--text-secondary)] mb-1">Notes</span>
+                            <p className="text-sm">{expense.notes}</p>
+                          </div>
+                        )}
 
                         <div className="flex justify-between pt-2 mt-2 border-t border-[var(--border)]">
                           <span className="text-xs text-[var(--text-secondary)]">Date</span>
