@@ -710,7 +710,11 @@ const ExpenseEditForm = ({ expense, onSave, onCancel, onDelete, kitty }) => {
     category: expense.category || '',
     notes: expense.notes || '',
     paidById: expense.paidById || '',
-    participants: expense.participants || []
+    participants: expense.participants || [],
+    date: expense.createdAt ? 
+      new Date(expense.createdAt.seconds ? expense.createdAt.seconds * 1000 : expense.createdAt)
+        .toISOString().substring(0, 10) : 
+      new Date().toISOString().substring(0, 10)
   });
   
   const handleChange = (e) => {
@@ -785,6 +789,9 @@ const ExpenseEditForm = ({ expense, onSave, onCancel, onDelete, kitty }) => {
       return;
     }
     
+    // Convert the date string to a Date object
+    const expenseDate = new Date(formData.date);
+    
     onSave({ 
       ...expense, 
       description: formData.description,
@@ -793,7 +800,11 @@ const ExpenseEditForm = ({ expense, onSave, onCancel, onDelete, kitty }) => {
       notes: formData.notes,
       paidById: formData.paidById,
       paidBy: payer.name,
-      participants: formData.participants
+      participants: formData.participants,
+      createdAt: {
+        seconds: Math.floor(expenseDate.getTime() / 1000),
+        nanoseconds: 0
+      }
     });
   };
 
@@ -809,7 +820,7 @@ const ExpenseEditForm = ({ expense, onSave, onCancel, onDelete, kitty }) => {
       animate={{ opacity: 1, y: 0 }}
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 overflow-y-auto"
     >
-      <div className="bg-[var(--surface)] rounded-xl shadow-lg max-w-xl w-full my-4 overflow-hidden">
+      <div className="bg-[var(--surface)] rounded-xl shadow-lg max-w-2xl w-full my-4 overflow-hidden">
         {/* Modal Header */}
         <div className="flex justify-between items-center p-4 sm:p-5 border-b border-[var(--border)]">
           <h2 className="text-xl font-bold">Edit Expense</h2>
@@ -823,7 +834,7 @@ const ExpenseEditForm = ({ expense, onSave, onCancel, onDelete, kitty }) => {
         
         {/* Modal Body */}
         <div className="p-4 sm:p-5">
-          <form onSubmit={handleSubmit} className="max-h-[60vh] overflow-y-auto px-0.5">
+          <form onSubmit={handleSubmit} className="max-h-[60vh] overflow-y-auto scrollbar-hide px-0.5">
             {/* Two-column layout for larger screens */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Left column */}
@@ -921,6 +932,21 @@ const ExpenseEditForm = ({ expense, onSave, onCancel, onDelete, kitty }) => {
               {/* Right column */}
               <div>
                 <div className="mb-3 sm:mb-4">
+                  <label htmlFor="expenseDate" className="block mb-1 sm:mb-2 text-sm font-medium">
+                    Date*
+                  </label>
+                  <input
+                    type="date"
+                    id="expenseDate"
+                    name="date"
+                    value={formData.date}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--border)] rounded-lg focus:outline-none focus:ring-1 focus:ring-[var(--primary)] focus:border-[var(--primary)]"
+                    required
+                  />
+                </div>
+
+                <div className="mb-3 sm:mb-4">
                   <label htmlFor="expenseNotes" className="block mb-1 sm:mb-2 text-sm font-medium">
                     Notes (optional)
                   </label>
@@ -958,7 +984,7 @@ const ExpenseEditForm = ({ expense, onSave, onCancel, onDelete, kitty }) => {
                       </button>
                     </div>
                   </div>
-                  <div className="bg-[var(--background)] p-1.5 rounded-lg max-h-28 sm:max-h-32 overflow-y-auto mb-1 sm:mb-2 border border-[var(--border)]">
+                  <div className="bg-[var(--background)] p-1.5 rounded-lg max-h-28 sm:max-h-32 overflow-y-auto scrollbar-hide mb-1 sm:mb-2 border border-[var(--border)]">
                     {kitty.members.map((member, idx) => {
                       const isSelected = formData.participants.some(p => 
                         (p.userId && p.userId === (member.userId || member.email)) || 
