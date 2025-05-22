@@ -141,17 +141,17 @@ KittyPay is a Progressive Web App (PWA) which means you can:
 
 ## 🗺️ Roadmap
 
-- **Q3 2023**
+- **Q3 2025**
   - Receipt scanning with OCR
   - Recurring expense automation
   - Mobile number-based user tagging
   
-- **Q4 2023**
+- **Q4 2025**
   - UPI integration for direct payments
   - Expense analytics and budget insights
   - WhatsApp integration for sharing expenses
   
-- **2024**
+- **2026**
   - Voice input for expense entry
   - Group chat functionality
   - Expense reminders and notifications
