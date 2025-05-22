@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { getDashboardData } from "../firebase/kitties";
 import toast from "react-hot-toast";
-import 'react-tooltip/dist/react-tooltip.css';
 
 // Import dashboard components
 import DashboardSummary from "../components/dashboard/DashboardSummary";

@@ -450,3 +450,134 @@ export const getDashboardData = async (userId) => {
     };
   }
 };
+
+/**
+ * Update an expense in a kitty
+ * @param {string} kittyId - The kitty ID
+ * @param {Object} updatedExpense - The updated expense data
+ * @returns {Promise<Object>} - Result of the operation
+ */
+export const updateKittyExpense = async (kittyId, updatedExpense) => {
+  try {
+    const kittyRef = doc(db, "kitties", kittyId);
+    const kittyDoc = await getDoc(kittyRef);
+
+    if (!kittyDoc.exists()) {
+      return { error: "Kitty not found" };
+    }
+
+    const kittyData = kittyDoc.data();
+    const expenses = kittyData.expenses || [];
+    
+    // Find the expense to update
+    const expenseIndex = expenses.findIndex(exp => exp.id === updatedExpense.id);
+    
+    if (expenseIndex === -1) {
+      return { error: "Expense not found" };
+    }
+    
+    // Calculate the difference in amount
+    const oldAmount = expenses[expenseIndex].amount;
+    const newAmount = updatedExpense.amount;
+    const amountDifference = newAmount - oldAmount;
+    
+    // Calculate per person share based on participants
+    const participants = updatedExpense.participants || kittyData.members;
+    const perPersonAmount = newAmount / participants.length;
+    
+    // Update the expense with new values
+    expenses[expenseIndex] = {
+      ...expenses[expenseIndex],
+      ...updatedExpense,
+      perPersonAmount
+    };
+    
+    // Update the total amount
+    const newTotalAmount = kittyData.totalAmount + amountDifference;
+    
+    await updateDoc(kittyRef, {
+      expenses: expenses,
+      totalAmount: newTotalAmount
+    });
+
+    return { success: true, expense: expenses[expenseIndex] };
+  } catch (error) {
+    console.error("Error updating expense:", error);
+    return { error: error.message };
+  }
+};
+
+/**
+ * Update settlement status in a kitty
+ * @param {string} kittyId - The kitty ID
+ * @param {Array} settledTransactions - Array of settled transactions
+ * @returns {Promise<Object>} - Result of the operation
+ */
+export const updateKittySettlement = async (kittyId, settledTransactions) => {
+  try {
+    const kittyRef = doc(db, "kitties", kittyId);
+    const kittyDoc = await getDoc(kittyRef);
+
+    if (!kittyDoc.exists()) {
+      return { error: "Kitty not found" };
+    }
+    
+    await updateDoc(kittyRef, {
+      settledTransactions
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error updating settlements:", error);
+    return { error: error.message };
+  }
+};
+
+/**
+ * Delete an expense from a kitty
+ * @param {string} kittyId - The kitty ID
+ * @param {string} expenseId - The ID of the expense to delete
+ * @returns {Promise<Object>} - Result of the operation
+ */
+export const deleteKittyExpense = async (kittyId, expenseId) => {
+  try {
+    const kittyRef = doc(db, "kitties", kittyId);
+    const kittyDoc = await getDoc(kittyRef);
+
+    if (!kittyDoc.exists()) {
+      return { error: "Kitty not found" };
+    }
+
+    const kittyData = kittyDoc.data();
+    const expenses = kittyData.expenses || [];
+    
+    // Find the expense to delete
+    const expenseIndex = expenses.findIndex(exp => exp.id === expenseId);
+    
+    if (expenseIndex === -1) {
+      return { error: "Expense not found" };
+    }
+    
+    // Get the amount of the expense to subtract from total
+    const expenseAmount = expenses[expenseIndex].amount;
+    
+    // Remove the expense from the array
+    const updatedExpenses = [
+      ...expenses.slice(0, expenseIndex),
+      ...expenses.slice(expenseIndex + 1)
+    ];
+    
+    // Update the total amount
+    const newTotalAmount = kittyData.totalAmount - expenseAmount;
+    
+    await updateDoc(kittyRef, {
+      expenses: updatedExpenses,
+      totalAmount: newTotalAmount
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error deleting expense:", error);
+    return { error: error.message };
+  }
+};
