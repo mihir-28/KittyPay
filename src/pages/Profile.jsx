@@ -1,12 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { FaUser, FaEnvelope, FaCalendarAlt, FaEdit, FaKey, FaSignOutAlt, FaCreditCard, FaShieldAlt } from 'react-icons/fa';
+import { FaUser, FaEnvelope, FaCalendarAlt, FaEdit, FaKey, FaSignOutAlt, FaCreditCard, FaShieldAlt, FaCamera } from 'react-icons/fa';
 import { FaSun, FaMoon } from 'react-icons/fa';
 import { signOut } from '../firebase/auth';
 import { updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { auth } from '../firebase/config';
 import { toast } from 'react-hot-toast';
 import { motion } from 'framer-motion';
+import { doc, updateDoc, getDoc, setDoc } from 'firebase/firestore';
+import { db } from '../firebase/config';
 
 const Profile = () => {
   const { currentUser } = useAuth();
@@ -15,35 +17,130 @@ const Profile = () => {
     email: '',
     photoURL: '',
     createdAt: '',
-    lastSignInTime: ''
+    lastSignInTime: '',
+    isGoogleUser: false,
+    isEmailUser: false,
+    isEmailLinkUser: false,
+    passwordLastChanged: null
   });
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isDark, setIsDark] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef(null);
 
   // Password change states
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [passwordLoading, setPasswordLoading] = useState(false); useEffect(() => {
+  const [passwordLoading, setPasswordLoading] = useState(false);
+
+  useEffect(() => {
     // If we have a current user, populate the user data
     if (currentUser) {
-      setUserData({
-        displayName: currentUser.displayName || 'No Name',
-        email: currentUser.email || 'No Email',
-        photoURL: currentUser.photoURL || 'https://via.placeholder.com/150',
-        createdAt: currentUser.metadata?.creationTime
-          ? new Date(currentUser.metadata.creationTime).toLocaleDateString()
-          : 'Unknown',
-        lastSignInTime: currentUser.metadata?.lastSignInTime
-          ? new Date(currentUser.metadata.lastSignInTime).toLocaleDateString()
-          : 'Unknown',
-        // Check if user is from Google auth
-        isGoogleUser: currentUser.providerData?.some(provider => provider.providerId === 'google.com') || false
-      });
-      setEditedName(currentUser.displayName || '');
+      // Check login providers
+      const isGoogleUser = currentUser.providerData?.some(provider => provider.providerId === 'google.com') || false;
+      const isEmailUser = currentUser.providerData?.some(provider => provider.providerId === 'password') || false;
+      const isEmailLinkUser = currentUser.providerData?.some(provider => provider.providerId === 'emailLink') || false;
+      
+      // We'll get user metadata from Firestore in a production app
+      // For now, we'll simulate password last changed date
+      const passwordLastChanged = localStorage.getItem(`password_last_changed_${currentUser.uid}`) 
+        ? new Date(localStorage.getItem(`password_last_changed_${currentUser.uid}`)).toLocaleDateString()
+        : null;
+
+      // Get the initial photo URL
+      // Priority: Firestore > Google profile picture > placeholder
+      const fetchUserData = async () => {
+        try {
+          // First try to get user data from Firestore
+          const userDocRef = doc(db, "users", currentUser.uid);
+          const userDoc = await getDoc(userDocRef);
+          
+          let photoURL = 'https://via.placeholder.com/150';
+          
+          // If we have a photoURL in Firestore, use it
+          if (userDoc.exists() && userDoc.data().photoURL) {
+            photoURL = userDoc.data().photoURL;
+          }
+          // If user has a Google profile picture and no custom picture yet, use the Google one
+          else if (isGoogleUser && currentUser.providerData) {
+            // Find the Google provider data
+            const googleProvider = currentUser.providerData.find(
+              provider => provider.providerId === 'google.com'
+            );
+            
+            if (googleProvider && googleProvider.photoURL) {
+              photoURL = googleProvider.photoURL;
+              
+              // Also save the Google profile picture to Firestore for future use
+              if (userDoc.exists()) {
+                await updateDoc(userDocRef, {
+                  photoURL: googleProvider.photoURL,
+                  lastUpdated: new Date()
+                });
+              } else {
+                await setDoc(userDocRef, {
+                  photoURL: googleProvider.photoURL,
+                  displayName: currentUser.displayName || googleProvider.displayName || 'No Name',
+                  email: currentUser.email,
+                  lastUpdated: new Date()
+                });
+              }
+            }
+          }
+          // Otherwise fall back to Firebase Auth photoURL or placeholder
+          else if (currentUser.photoURL && !currentUser.photoURL.startsWith('user_photo:')) {
+            photoURL = currentUser.photoURL;
+          }
+          
+          // Set user data with the determined photoURL
+          setUserData({
+            displayName: currentUser.displayName || 'No Name',
+            email: currentUser.email || 'No Email',
+            photoURL: photoURL,
+            createdAt: currentUser.metadata?.creationTime
+              ? new Date(currentUser.metadata.creationTime).toLocaleDateString()
+              : 'Unknown',
+            lastSignInTime: currentUser.metadata?.lastSignInTime
+              ? new Date(currentUser.metadata.lastSignInTime).toLocaleDateString()
+              : 'Unknown',
+            isGoogleUser, 
+            isEmailUser,
+            isEmailLinkUser,
+            passwordLastChanged
+          });
+          
+          setEditedName(currentUser.displayName || '');
+          
+        } catch (error) {
+          console.error("Error fetching user data:", error);
+          
+          // Fallback to basic Auth data if Firestore fetch fails
+          setUserData({
+            displayName: currentUser.displayName || 'No Name',
+            email: currentUser.email || 'No Email',
+            photoURL: currentUser.photoURL || 'https://via.placeholder.com/150',
+            createdAt: currentUser.metadata?.creationTime
+              ? new Date(currentUser.metadata.creationTime).toLocaleDateString()
+              : 'Unknown',
+            lastSignInTime: currentUser.metadata?.lastSignInTime
+              ? new Date(currentUser.metadata.lastSignInTime).toLocaleDateString()
+              : 'Unknown',
+            isGoogleUser, 
+            isEmailUser,
+            isEmailLinkUser,
+            passwordLastChanged
+          });
+          
+          setEditedName(currentUser.displayName || '');
+        }
+      };
+      
+      fetchUserData();
     }
   }, [currentUser]);
   // Dark mode toggle effect
@@ -158,10 +255,15 @@ const Profile = () => {
     e.preventDefault();
 
     // Different validation for Google vs email users
-    if (userData.isGoogleUser) {
-      // Google users - only need new password and confirm
-      if (!newPassword || !confirmPassword) {
-        toast.error('Password is required');
+    if (!userData.isEmailUser) {
+      // First time setting a password - no current password needed
+      if (!newPassword) {
+        toast.error('New password is required');
+        return;
+      }
+      
+      if (!confirmPassword) {
+        toast.error('Password confirmation is required');
         return;
       }
       
@@ -178,13 +280,24 @@ const Profile = () => {
       setPasswordLoading(true);
       
       try {
-        // For Google users, set password directly (they're already authenticated)
+        // Set password directly (they're already authenticated)
         await updatePassword(auth.currentUser, newPassword);
+        
+        // Save the password change date
+        localStorage.setItem(`password_last_changed_${currentUser.uid}`, new Date().toISOString());
+        
+        // Update local state
+        setUserData({
+          ...userData,
+          passwordLastChanged: new Date().toLocaleDateString(),
+          isEmailUser: true // User now has email+password auth too
+        });
+        
         toast.success('Password created successfully');
       } catch (error) {
         console.error('Error setting password:', error);
         
-        // Check for common errors with Google users
+        // Check for common errors
         if (error.code === 'auth/requires-recent-login') {
           toast.error('For security reasons, please logout and sign in again before creating a password');
         } else {
@@ -194,9 +307,19 @@ const Profile = () => {
         return;
       }
     } else {
-      // Email users - require current password verification
-      if (!currentPassword || !newPassword || !confirmPassword) {
-        toast.error('All fields are required');
+      // Updating existing password - require current password verification
+      if (!currentPassword) {
+        toast.error('Current password is required');
+        return;
+      }
+      
+      if (!newPassword) {
+        toast.error('New password is required');
+        return;
+      }
+      
+      if (!confirmPassword) {
+        toast.error('Password confirmation is required');
         return;
       }
 
@@ -219,8 +342,20 @@ const Profile = () => {
           currentPassword
         );
 
-        await reauthenticateWithCredential(auth.currentUser, credential);      // Then update the password
+        await reauthenticateWithCredential(auth.currentUser, credential);
+        
+        // Then update the password
         await updatePassword(auth.currentUser, newPassword);
+        
+        // Save the password change date
+        localStorage.setItem(`password_last_changed_${currentUser.uid}`, new Date().toISOString());
+        
+        // Update local state
+        setUserData({
+          ...userData,
+          passwordLastChanged: new Date().toLocaleDateString()
+        });
+        
         toast.success('Password updated successfully');
       } catch (error) {
         console.error('Error changing password:', error);
@@ -231,13 +366,124 @@ const Profile = () => {
         }
       }
     }
-      // Clear form and close modal (regardless of user type)
+    
+    // Clear form and close modal (regardless of user type)
     setCurrentPassword('');
     setNewPassword('');
     setConfirmPassword('');
     setShowPasswordModal(false);
     setPasswordLoading(false);
   };
+
+  // Handle profile picture upload using base64 encoding and Firestore
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file is an image
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+
+    // Validate file size (limit to 1MB for base64 storage)
+    if (file.size > 1 * 1024 * 1024) {
+      toast.error('Image must be smaller than 1MB when using Firestore storage');
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadProgress(0);
+    
+    // Create a unique identifier for this upload to use in toast messages
+    const toastId = 'upload-toast-' + Date.now();
+    toast.loading('Processing image...', { id: toastId });
+
+    try {
+      // Read the file as a data URL (base64)
+      const reader = new FileReader();
+      
+      reader.onloadstart = () => {
+        setUploadProgress(10);
+      };
+      
+      reader.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const progress = (event.loaded / event.total) * 50; // First 50% is reading the file
+          setUploadProgress(progress);
+          toast.loading(`Processing image: ${Math.round(progress)}%`, { id: toastId });
+        }
+      };
+      
+      reader.onerror = () => {
+        toast.error('Failed to read the image file', { id: toastId });
+        setIsUploading(false);
+      };
+      
+      reader.onload = async () => {
+        try {
+          const base64Image = reader.result;
+          setUploadProgress(60);
+          toast.loading('Uploading to database...', { id: toastId });
+          
+          // Generate a unique photo identifier for this user
+          const photoId = `profile_${currentUser.uid}_${Date.now()}`;
+          
+          // Store the actual image data in Firestore first
+          const userDocRef = doc(db, "users", currentUser.uid);
+          
+          // Get existing user doc or create new one
+          const userDoc = await getDoc(userDocRef);
+          
+          if (userDoc.exists()) {
+            await updateDoc(userDocRef, {
+              photoURL: base64Image,
+              photoId: photoId,
+              lastUpdated: new Date()
+            });
+          } else {
+            await setDoc(userDocRef, {
+              photoURL: base64Image,
+              photoId: photoId,
+              displayName: currentUser.displayName || 'No Name',
+              email: currentUser.email,
+              lastUpdated: new Date()
+            });
+          }
+          
+          setUploadProgress(90);
+          
+          // Then update Auth profile with a reference marker
+          await updateProfile(auth.currentUser, {
+            photoURL: `user_photo:${photoId}` // Just a reference marker
+          });
+          
+          // Update local state with the actual image data
+          setUserData({
+            ...userData,
+            photoURL: base64Image
+          });
+          
+          setUploadProgress(100);
+          toast.success('Profile picture updated successfully!', { id: toastId });
+        } catch (error) {
+          console.error('Error updating profile with new image:', error);
+          toast.error('Failed to update profile: ' + (error.message || 'Unknown error'), { id: toastId });
+        } finally {
+          setIsUploading(false);
+        }
+      };
+      
+      // Start reading the file
+      reader.readAsDataURL(file);
+      
+    } catch (error) {
+      console.error('Error handling file upload:', error);
+      toast.error('Failed to process image: ' + (error.message || 'Unknown error'), { id: toastId });
+      setIsUploading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--background)' }}>
       <div className="flex flex-col lg:flex-row">
@@ -270,7 +516,16 @@ const Profile = () => {
               className="relative mx-auto mb-8"
               whileHover={{ scale: 1.05 }}
               transition={{ duration: 0.3 }}
+              onClick={() => fileInputRef.current.click()}
             >
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                className="hidden" 
+                accept="image/*"
+                onChange={handleFileChange}
+              />
+              
               <div className="w-40 h-40 mx-auto rounded-full relative">
                 {/* More vibrant animated gradient border with rotation */}
                 <motion.div
@@ -307,11 +562,11 @@ const Profile = () => {
                   className="absolute inset-0 w-full h-full object-cover rounded-full p-[6px] z-10"
                 />
 
-                {/* Semi-transparent edit overlay */}
+                {/* Visible edit overlay on both mobile and desktop */}
                 <motion.div
-                  className="absolute inset-0 z-20 flex items-center justify-center rounded-full opacity-0 hover:opacity-100 cursor-pointer"
+                  className={`absolute inset-0 z-20 flex items-center justify-center rounded-full cursor-pointer backdrop-blur-sm ${isUploading ? 'opacity-100' : 'md:opacity-0 md:hover:opacity-100 opacity-60'}`}
                   style={{
-                    background: 'radial-gradient(circle, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.6) 100%)'
+                    background: 'radial-gradient(circle, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.5) 100%)'
                   }}
                   whileHover={{
                     scale: 1.05,
@@ -319,12 +574,29 @@ const Profile = () => {
                   }}
                   transition={{ duration: 0.2 }}
                 >
-                  <motion.div
-                    whileHover={{ scale: 1.2, rotate: 15 }}
-                    transition={{ type: "spring", stiffness: 300 }}
-                  >
-                    <FaEdit size={30} color="white" />
-                  </motion.div>
+                  {isUploading ? (
+                    <div className="text-center text-white">
+                      <div className="font-medium mb-2">Uploading...</div>
+                      <div className="text-white text-lg font-medium mb-1">{Math.round(uploadProgress)}%</div>
+                      <div className="w-24 h-3 bg-gray-700 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-white" 
+                          style={{ width: `${uploadProgress}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center">
+                      <motion.div
+                        whileHover={{ scale: 1.2 }}
+                        transition={{ type: "spring", stiffness: 300 }}
+                        className="flex flex-col items-center"
+                      >
+                        <FaCamera size={30} color="white" className="mb-1" />
+                        <span className="text-white text-xs font-medium">Change Photo</span>
+                      </motion.div>
+                    </div>
+                  )}
                 </motion.div>
               </div>
             </motion.div>
@@ -506,9 +778,9 @@ const Profile = () => {
                 <div>
                   <p className="font-medium" style={{ color: 'var(--text-primary)' }}>Password</p>
                   <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                    {userData.isGoogleUser
-                      ? 'Set password to enable email login'
-                      : 'Last changed: Never'}
+                    {userData.isEmailUser 
+                      ? `Last changed: ${userData.passwordLastChanged || 'Unknown'}`
+                      : 'Set password to enable email login'}
                   </p>
                 </div>
                 <motion.button
@@ -520,7 +792,7 @@ const Profile = () => {
                   onClick={() => setShowPasswordModal(true)}
                   whileTap={{ scale: 0.95 }}
                 >
-                  {userData.isGoogleUser ? 'Create' : 'Update'}
+                  {userData.isEmailUser ? 'Update' : 'Create'}
                 </motion.button>
               </motion.div>
               <motion.div
@@ -662,7 +934,7 @@ const Profile = () => {
             transition={{ type: "spring", damping: 15 }}
           >            <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-bold flex items-center" style={{ color: 'var(--text-primary)' }}>
-                <FaKey className="mr-2" /> {userData.isGoogleUser ? 'Create Password' : 'Change Password'}
+                <FaKey className="mr-2" /> {userData.isEmailUser ? 'Update Password' : 'Create Password'}
               </h3>
               <motion.button
                 whileTap={{ scale: 0.95 }}
@@ -672,7 +944,7 @@ const Profile = () => {
                 &times;
               </motion.button>
             </div>            <form onSubmit={handleChangePassword} className="space-y-4">
-              {!userData.isGoogleUser && (
+              {userData.isEmailUser && (
                 <div>
                   <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
                     Current Password
@@ -687,7 +959,7 @@ const Profile = () => {
                       backgroundColor: 'var(--input-background)',
                       color: 'var(--text-primary)',
                     }}
-                    required={!userData.isGoogleUser}
+                    required={userData.isEmailUser}
                   />
                 </div>
               )}
@@ -752,7 +1024,7 @@ const Profile = () => {
                   whileTap={{ scale: 0.95 }}
                   disabled={passwordLoading}
                 >
-                  {passwordLoading ? 'Updating...' : (userData.isGoogleUser ? 'Create Password' : 'Update Password')}
+                  {passwordLoading ? 'Updating...' : (userData.isEmailUser ? 'Update Password' : 'Create Password')}
                 </motion.button>
               </div>
             </form>
