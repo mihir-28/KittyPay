@@ -10,6 +10,7 @@ import Signup from "./pages/Signup";
 import Home from "./pages/Home";
 import Terms from "./pages/Terms";
 import Policy from "./pages/Policy";
+import Contact from "./pages/Contact";
 import Profile from "./pages/Profile";
 import Kitties from "./pages/Kitties";
 import Dashboard from "./pages/Dashboard";
@@ -50,6 +51,7 @@ function App() {
             <Route index element={<Home />} />
             <Route path="/terms-of-use" element={<Terms />} />
             <Route path="/privacy-policy" element={<Policy />} />
+            <Route path="/contact" element={<Contact />} />
             
             {/* Auth routes - redirect to profile if already logged in */}
             <Route 

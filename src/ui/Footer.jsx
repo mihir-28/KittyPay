@@ -31,6 +31,10 @@ const Footer = () => {
               style={{ color: 'var(--text-primary)' }}>
               Home
             </Link>
+            <Link to="/contact" className="hover:opacity-80 transition-opacity" 
+              style={{ color: 'var(--text-primary)' }}>
+              Contact
+            </Link>
             <Link to="/privacy-policy" className="hover:opacity-80 transition-opacity" 
               style={{ color: 'var(--text-primary)' }}>
               Privacy

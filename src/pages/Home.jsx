@@ -46,20 +46,20 @@ const Home = () => {
                   </button>
                 </Link>
                 <button
-  onClick={() => {
-    document.getElementById('how-it-works').scrollIntoView({ behavior: 'smooth' });
-  }}
-  className="px-6 py-3 rounded-lg transition-colors"
-  style={{
-    border: '1px solid var(--primary)',
-    color: 'var(--primary)',
-    backgroundColor: 'transparent'
-  }}
-  onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'var(--primary-light)'}
-  onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
->
-  How It Works
-</button>
+                  onClick={() => {
+                    document.getElementById('how-it-works').scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="px-6 py-3 rounded-lg transition-colors"
+                  style={{
+                    border: '1px solid var(--primary)',
+                    color: 'var(--primary)',
+                    backgroundColor: 'transparent'
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'var(--primary-light)'}
+                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                  How It Works
+                </button>
               </div>
             </div>
           </div>
