@@ -75,7 +75,7 @@ const Navbar = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-22">
           <div className="flex-shrink-0 flex items-center">
-            <Link to="/" className="flex items-center">
+            <Link to="/" className="flex items-center cursor-pointer">
               <img className="h-8 w-auto mr-2" src="/logo.svg" alt="KittyPay Logo" />
               <span className="font-bold text-xl" style={{ color: 'var(--text-primary)' }}>
                 KittyPay
@@ -85,17 +85,17 @@ const Navbar = () => {
 
           {/* Desktop navigation */}
           <div className="hidden md:flex md:items-center md:space-x-4">
-            <Link to="/" className="px-3 py-2 transition-colors" style={{ color: 'var(--text-primary)' }}
+            <Link to="/" className="px-3 py-2 transition-colors cursor-pointer" style={{ color: 'var(--text-primary)' }}
               onMouseOver={(e) => e.currentTarget.style.color = 'var(--primary)'}
               onMouseOut={(e) => e.currentTarget.style.color = 'var(--text-primary)'}>
               Home
             </Link>
-            <Link to="/kitties" className="px-3 py-2 transition-colors" style={{ color: 'var(--text-primary)' }}
+            <Link to="/kitties" className="px-3 py-2 transition-colors cursor-pointer" style={{ color: 'var(--text-primary)' }}
               onMouseOver={(e) => e.currentTarget.style.color = 'var(--primary)'}
               onMouseOut={(e) => e.currentTarget.style.color = 'var(--text-primary)'}>
               My Kitties
             </Link>
-            <Link to="/dashboard" className="px-3 py-2 transition-colors" style={{ color: 'var(--text-primary)' }}
+            <Link to="/dashboard" className="px-3 py-2 transition-colors cursor-pointer" style={{ color: 'var(--text-primary)' }}
               onMouseOver={(e) => e.currentTarget.style.color = 'var(--primary)'}
               onMouseOut={(e) => e.currentTarget.style.color = 'var(--text-primary)'}>
               Dashboard
@@ -107,7 +107,7 @@ const Navbar = () => {
             {/* Theme toggle button */}
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-full transition-colors"
+              className="p-2 rounded-full transition-colors cursor-pointer"
               style={{
                 backgroundColor: 'transparent',
                 color: 'var(--text-primary)'
@@ -120,7 +120,7 @@ const Navbar = () => {
 
             {isAuthenticated ? (
               <Link to="/profile">
-                <button className="px-4 py-2 rounded-md transition-colors flex items-center"
+                <button className="px-4 py-2 rounded-md transition-colors flex items-center cursor-pointer"
                   style={{
                     border: '1px solid var(--primary)',
                     color: 'var(--primary)',
@@ -135,7 +135,7 @@ const Navbar = () => {
             ) : (
               <>
                 <Link to="/login">
-                  <button className="px-4 py-2 rounded-md transition-colors"
+                  <button className="px-4 py-2 rounded-md transition-colors cursor-pointer"
                     style={{
                       border: '1px solid var(--primary)',
                       color: 'var(--primary)',
@@ -147,7 +147,7 @@ const Navbar = () => {
                   </button>
                 </Link>
                 <Link to="/signup">
-                  <button className="px-4 py-2 rounded-md transition-colors"
+                  <button className="px-4 py-2 rounded-md transition-colors cursor-pointer"
                     style={{
                       backgroundColor: 'var(--primary)',
                       color: 'white'
@@ -166,7 +166,7 @@ const Navbar = () => {
             {/* Mobile theme toggle */}
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-full transition-colors"
+              className="p-2 rounded-full transition-colors cursor-pointer"
               style={{
                 backgroundColor: 'transparent',
                 color: 'var(--text-primary)'
@@ -179,7 +179,7 @@ const Navbar = () => {
 
             <button
               onClick={toggleMenu}
-              className="relative w-10 h-10 flex items-center justify-center focus:outline-none rounded-full hover:bg-[var(--hover-subtle)] transition-all duration-300"
+              className="relative w-10 h-10 flex items-center justify-center focus:outline-none rounded-full hover:bg-[var(--hover-subtle)] transition-all duration-300 cursor-pointer"
               aria-label="Menu"
             >
               {isOpen ? (
@@ -243,7 +243,7 @@ const Navbar = () => {
             <div className="w-12 h-1.5 bg-gray-300 rounded-full mb-4"></div>
             
             <div className="flex items-center justify-between w-full">
-              <Link to="/" className="flex items-center" onClick={toggleMenu}>
+              <Link to="/" className="flex items-center cursor-pointer" onClick={toggleMenu}>
                 <img className="h-7 w-auto mr-2" src="/logo.svg" alt="KittyPay Logo" />
                 <span className="font-bold text-lg" style={{ color: 'var(--text-primary)' }}>
                   KittyPay
@@ -251,7 +251,7 @@ const Navbar = () => {
               </Link>
               <button
                 onClick={toggleMenu}
-                className="focus:outline-none p-2 rounded-full hover:bg-[var(--background)]"
+                className="focus:outline-none p-2 rounded-full hover:bg-[var(--background)] cursor-pointer"
                 style={{ color: 'var(--text-primary)' }}
               >
                 <FaTimes size={20} />
@@ -303,7 +303,7 @@ const Navbar = () => {
                 onClick={() => {
                   toggleTheme();
                 }}
-                className="flex items-center w-full text-left"
+                className="flex items-center w-full text-left cursor-pointer"
               >
                 <span className="mr-3 text-[var(--primary)]">
                   {isDark ? <FaSun size={18} /> : <FaMoon size={18} />}
@@ -317,8 +317,8 @@ const Navbar = () => {
             {/* Mobile sign in/up buttons or profile */}
             <div className="pt-4 space-y-3">
               {isAuthenticated ? (
-                <div className="block w-full" onClick={() => handleNavClick('/profile')}>
-                  <button className="w-full px-4 py-3 rounded-xl transition-colors flex items-center justify-center"
+                <div className="block w-full cursor-pointer" onClick={() => handleNavClick('/profile')}>
+                  <button className="w-full px-4 py-3 rounded-xl transition-colors flex items-center justify-center cursor-pointer"
                     style={{
                       backgroundColor: 'var(--primary)',
                       color: 'white'
@@ -330,8 +330,8 @@ const Navbar = () => {
                 </div>
               ) : (
                 <>
-                  <div className="block w-full" onClick={() => handleNavClick('/login')}>
-                    <button className="w-full px-4 py-3 rounded-xl transition-colors"
+                  <div className="block w-full cursor-pointer" onClick={() => handleNavClick('/login')}>
+                    <button className="w-full px-4 py-3 rounded-xl transition-colors cursor-pointer"
                       style={{
                         border: '1px solid var(--primary)',
                         color: 'var(--primary)',
@@ -342,8 +342,8 @@ const Navbar = () => {
                       Login
                     </button>
                   </div>
-                  <div className="block w-full" onClick={() => handleNavClick('/signup')}>
-                    <button className="w-full px-4 py-3 rounded-xl transition-colors"
+                  <div className="block w-full cursor-pointer" onClick={() => handleNavClick('/signup')}>
+                    <button className="w-full px-4 py-3 rounded-xl transition-colors cursor-pointer"
                       style={{
                         backgroundColor: 'var(--primary)',
                         color: 'white'

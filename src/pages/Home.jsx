@@ -1,7 +1,7 @@
 import React from 'react';
 import { FaArrowRight, FaUsers, FaReceipt, FaWallet, FaShieldAlt, FaLayerGroup, FaPlusCircle, FaGlobe, FaChartPie, FaCheckCircle, FaDownload, FaApple, FaAndroid, FaQuestionCircle, FaAngleDown } from 'react-icons/fa';
 import { FaTimes as FaX } from 'react-icons/fa';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -25,6 +25,8 @@ const Home = () => {
   const [notifyEmail, setNotifyEmail] = useState('');
   const [showEmailModal, setShowEmailModal] = useState(false);
   const modalRef = useRef(null);
+  const howItWorksRef = useRef(null);
+  const navigate = useNavigate();
 
   const toggleFaq = (index) => {
     if (openFaqIndex === index) {
@@ -116,6 +118,35 @@ const Home = () => {
     }
   };
 
+  const scrollToHowItWorks = () => {
+    const section = document.getElementById('how-it-works');
+    if (section) {
+      // Get the current window width to detect desktop
+      const isDesktop = window.innerWidth >= 768;
+      
+      if (isDesktop) {
+        // For desktop: use a more direct approach with specific pixel calculations
+        const yOffset = -20; // Slight offset from the top
+        const y = section.getBoundingClientRect().top + window.pageYOffset + yOffset;
+        
+        window.scrollTo({
+          top: y,
+          behavior: 'smooth'
+        });
+      } else {
+        // For mobile: use the standard approach that's already working
+        window.scrollTo({
+          top: section.offsetTop - 20,
+          behavior: 'smooth'
+        });
+      }
+    }
+  };
+
+  const goToSignup = () => {
+    navigate('/signup');
+  };
+
   return (
     <div>
       {/* Add the animation styles */}
@@ -151,20 +182,18 @@ const Home = () => {
                 KittyPay makes it simple to track, split, and settle expenses with friends and family in India.
                 No more awkward money talks or complex calculations.
               </p>
+              
               <div className="flex flex-wrap justify-center md:justify-start gap-4">
-                <Link to="/signup">
-                  <button
-                    className="flex items-center px-6 py-3 rounded-lg shadow-lg text-white transition-transform transform hover:scale-105"
-                    style={{ backgroundColor: 'var(--primary)' }}
-                  >
-                    Get Started <FaArrowRight className="ml-2" size={18} />
-                  </button>
-                </Link>
                 <button
-                  onClick={() => {
-                    document.getElementById('how-it-works').scrollIntoView({ behavior: 'smooth' });
-                  }}
-                  className="px-6 py-3 rounded-lg transition-colors"
+                  onClick={goToSignup}
+                  className="flex items-center px-6 py-3 rounded-lg shadow-lg text-white transition-transform transform hover:scale-105 cursor-pointer"
+                  style={{ backgroundColor: 'var(--primary)' }}
+                >
+                  Get Started <FaArrowRight className="ml-2" size={18} />
+                </button>
+                <button
+                  onClick={scrollToHowItWorks}
+                  className="px-6 py-3 rounded-lg transition-colors cursor-pointer"
                   style={{
                     border: '1px solid var(--primary)',
                     color: 'var(--primary)',
@@ -306,7 +335,7 @@ const Home = () => {
       </section>
 
       {/* How It Works Section */}
-      <section id="how-it-works" className="py-16 md:py-24" style={{ backgroundColor: 'var(--surface-alt)' }}>
+      <section id="how-it-works" ref={howItWorksRef} className="py-16 md:py-24" style={{ backgroundColor: 'var(--surface-alt)' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
@@ -364,14 +393,13 @@ const Home = () => {
           </div>
 
           <div className="text-center mt-12">
-            <Link to="/signup">
-              <button
-                className="px-8 py-3 rounded-lg shadow-lg text-white transition-transform transform hover:scale-105"
-                style={{ backgroundColor: 'var(--primary)' }}
-              >
-                Start Your First Kitty
-              </button>
-            </Link>
+            <button
+              onClick={goToSignup}
+              className="px-8 py-3 rounded-lg shadow-lg text-white transition-transform transform hover:scale-105 cursor-pointer"
+              style={{ backgroundColor: 'var(--primary)' }}
+            >
+              Start Your First Kitty
+            </button>
           </div>
         </div>
       </section>
@@ -515,19 +543,20 @@ const Home = () => {
                 </p>
                 <div className="flex flex-row flex-wrap w-full gap-4">
                   <div className="flex-1 min-w-[140px]">
-                    <Link to="/signup" className="block w-full h-full">
-                      <button className="w-full h-full bg-white text-[var(--primary)] px-4 py-3 rounded-lg flex items-center justify-center hover:opacity-90 transition-opacity">
-                        <FaUsers size={20} className="mr-2 flex-shrink-0" />
-                        <div className="text-left">
-                          <div className="text-xs">Join our</div>
-                          <div className="text-sm font-semibold">Beta Program</div>
-                        </div>
-                      </button>
-                    </Link>
+                    <button 
+                      onClick={goToSignup}
+                      className="w-full h-full bg-white text-[var(--primary)] px-4 py-3 rounded-lg flex items-center justify-center hover:opacity-90 transition-opacity cursor-pointer"
+                    >
+                      <FaUsers size={20} className="mr-2 flex-shrink-0" />
+                      <div className="text-left">
+                        <div className="text-xs">Join our</div>
+                        <div className="text-sm font-semibold">Beta Program</div>
+                      </div>
+                    </button>
                   </div>
                   <div className="flex-1 min-w-[140px]">
                     <button
-                      className="w-full h-full bg-black/30 backdrop-blur-sm text-white border border-white/30 px-4 py-3 rounded-lg flex items-center justify-center hover:bg-black/40 transition-all"
+                      className="w-full h-full bg-black/30 backdrop-blur-sm text-white border border-white/30 px-4 py-3 rounded-lg flex items-center justify-center hover:bg-black/40 transition-all cursor-pointer"
                       onClick={handleNotifyClick}
                     >
                       <FaDownload size={20} className="mr-2 flex-shrink-0" />
@@ -575,14 +604,13 @@ const Home = () => {
           <p className="text-xl mb-8 text-white opacity-90 max-w-2xl mx-auto">
             Join thousands of Indian users who manage shared expenses effortlessly with KittyPay.
           </p>
-          <Link to="/signup">
-            <button
-              className="px-8 py-3 rounded-lg bg-white shadow-lg transition-transform transform hover:scale-105"
-              style={{ color: 'var(--primary)' }}
-            >
-              Get Started — It's Free
-            </button>
-          </Link>
+          <button
+            onClick={goToSignup}
+            className="px-8 py-3 rounded-lg bg-white shadow-lg transition-transform transform hover:scale-105 cursor-pointer"
+            style={{ color: 'var(--primary)' }}
+          >
+            Get Started — It's Free
+          </button>
         </div>
       </section>
 
@@ -598,7 +626,7 @@ const Home = () => {
               <h3 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Get App Launch Updates</h3>
               <button
                 onClick={() => setShowEmailModal(false)}
-                className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+                className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
               >
                 <FaX size={18} />
               </button>
@@ -635,7 +663,7 @@ const Home = () => {
                 <button
                   type="button"
                   onClick={() => setShowEmailModal(false)}
-                  className="px-4 py-2 rounded-lg transition-colors"
+                  className="px-4 py-2 rounded-lg transition-colors cursor-pointer"
                   style={{
                     border: '1px solid var(--border)',
                     color: 'var(--text-secondary)'
@@ -645,7 +673,7 @@ const Home = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-lg text-white transition-transform transform hover:scale-105"
+                  className="px-4 py-2 rounded-lg text-white transition-transform transform hover:scale-105 cursor-pointer"
                   style={{ backgroundColor: 'var(--primary)' }}
                 >
                   Notify Me
