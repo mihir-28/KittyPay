@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { FaUser, FaEnvelope, FaCalendarAlt, FaEdit, FaKey, FaSignOutAlt, FaCreditCard, FaShieldAlt, FaCamera } from 'react-icons/fa';
+import { FaUser, FaEnvelope, FaCalendarAlt, FaEdit, FaKey, FaSignOutAlt, FaShieldAlt, FaCamera, FaMoneyBillWave, FaClipboardList } from 'react-icons/fa';
 import { FaSun, FaMoon } from 'react-icons/fa';
 import { signOut } from '../firebase/auth';
 import { updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
@@ -9,6 +9,7 @@ import { toast } from 'react-hot-toast';
 import { motion } from 'framer-motion';
 import { doc, updateDoc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
+import { getDashboardData } from '../firebase/kitties';
 
 const Profile = () => {
   const { currentUser } = useAuth();
@@ -37,6 +38,10 @@ const Profile = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordLoading, setPasswordLoading] = useState(false);
+  
+  // Add state for user's recent expenses
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [activityLoading, setActivityLoading] = useState(false);
 
   useEffect(() => {
     // If we have a current user, populate the user data
@@ -141,6 +146,21 @@ const Profile = () => {
       };
       
       fetchUserData();
+      
+      // Fetch user's recent activity
+      const fetchUserActivity = async () => {
+        try {
+          setActivityLoading(true);
+          const dashboardData = await getDashboardData(currentUser.uid);
+          setRecentActivity(dashboardData.recentExpenses || []);
+        } catch (error) {
+          console.error("Error fetching user activity:", error);
+        } finally {
+          setActivityLoading(false);
+        }
+      };
+      
+      fetchUserActivity();
     }
   }, [currentUser]);
   // Dark mode toggle effect
@@ -261,42 +281,42 @@ const Profile = () => {
         toast.error('New password is required');
         return;
       }
-      
+
       if (!confirmPassword) {
         toast.error('Password confirmation is required');
         return;
       }
-      
+
       if (newPassword !== confirmPassword) {
         toast.error('Passwords do not match');
         return;
       }
-      
+
       if (newPassword.length < 6) {
         toast.error('Password must be at least 6 characters');
         return;
       }
-      
+
       setPasswordLoading(true);
-      
+
       try {
         // Set password directly (they're already authenticated)
         await updatePassword(auth.currentUser, newPassword);
-        
+
         // Save the password change date
         localStorage.setItem(`password_last_changed_${currentUser.uid}`, new Date().toISOString());
-        
+
         // Update local state
         setUserData({
           ...userData,
           passwordLastChanged: new Date().toLocaleDateString(),
           isEmailUser: true // User now has email+password auth too
         });
-        
+
         toast.success('Password created successfully');
       } catch (error) {
         console.error('Error setting password:', error);
-        
+
         // Check for common errors
         if (error.code === 'auth/requires-recent-login') {
           toast.error('For security reasons, please logout and sign in again before creating a password');
@@ -312,12 +332,12 @@ const Profile = () => {
         toast.error('Current password is required');
         return;
       }
-      
+
       if (!newPassword) {
         toast.error('New password is required');
         return;
       }
-      
+
       if (!confirmPassword) {
         toast.error('Password confirmation is required');
         return;
@@ -343,19 +363,19 @@ const Profile = () => {
         );
 
         await reauthenticateWithCredential(auth.currentUser, credential);
-        
+
         // Then update the password
         await updatePassword(auth.currentUser, newPassword);
-        
+
         // Save the password change date
         localStorage.setItem(`password_last_changed_${currentUser.uid}`, new Date().toISOString());
-        
+
         // Update local state
         setUserData({
           ...userData,
           passwordLastChanged: new Date().toLocaleDateString()
         });
-        
+
         toast.success('Password updated successfully');
       } catch (error) {
         console.error('Error changing password:', error);
@@ -366,7 +386,7 @@ const Profile = () => {
         }
       }
     }
-    
+
     // Clear form and close modal (regardless of user type)
     setCurrentPassword('');
     setNewPassword('');
@@ -394,7 +414,7 @@ const Profile = () => {
 
     setIsUploading(true);
     setUploadProgress(0);
-    
+
     // Create a unique identifier for this upload to use in toast messages
     const toastId = 'upload-toast-' + Date.now();
     toast.loading('Processing image...', { id: toastId });
@@ -402,11 +422,11 @@ const Profile = () => {
     try {
       // Read the file as a data URL (base64)
       const reader = new FileReader();
-      
+
       reader.onloadstart = () => {
         setUploadProgress(10);
       };
-      
+
       reader.onprogress = (event) => {
         if (event.lengthComputable) {
           const progress = (event.loaded / event.total) * 50; // First 50% is reading the file
@@ -414,27 +434,27 @@ const Profile = () => {
           toast.loading(`Processing image: ${Math.round(progress)}%`, { id: toastId });
         }
       };
-      
+
       reader.onerror = () => {
         toast.error('Failed to read the image file', { id: toastId });
         setIsUploading(false);
       };
-      
+
       reader.onload = async () => {
         try {
           const base64Image = reader.result;
           setUploadProgress(60);
           toast.loading('Uploading to database...', { id: toastId });
-          
+
           // Generate a unique photo identifier for this user
           const photoId = `profile_${currentUser.uid}_${Date.now()}`;
-          
+
           // Store the actual image data in Firestore first
           const userDocRef = doc(db, "users", currentUser.uid);
-          
+
           // Get existing user doc or create new one
           const userDoc = await getDoc(userDocRef);
-          
+
           if (userDoc.exists()) {
             await updateDoc(userDocRef, {
               photoURL: base64Image,
@@ -450,20 +470,20 @@ const Profile = () => {
               lastUpdated: new Date()
             });
           }
-          
+
           setUploadProgress(90);
-          
+
           // Then update Auth profile with a reference marker
           await updateProfile(auth.currentUser, {
             photoURL: `user_photo:${photoId}` // Just a reference marker
           });
-          
+
           // Update local state with the actual image data
           setUserData({
             ...userData,
             photoURL: base64Image
           });
-          
+
           setUploadProgress(100);
           toast.success('Profile picture updated successfully!', { id: toastId });
         } catch (error) {
@@ -473,15 +493,65 @@ const Profile = () => {
           setIsUploading(false);
         }
       };
-      
+
       // Start reading the file
       reader.readAsDataURL(file);
-      
+
     } catch (error) {
       console.error('Error handling file upload:', error);
       toast.error('Failed to process image: ' + (error.message || 'Unknown error'), { id: toastId });
       setIsUploading(false);
     }
+  };
+
+  // Helper function to format date
+  const formatDate = (dateValue) => {
+    if (!dateValue) return 'N/A';
+    
+    const date = dateValue.seconds 
+      ? new Date(dateValue.seconds * 1000) 
+      : new Date(dateValue);
+    
+    // Check if date is valid
+    if (isNaN(date.getTime())) return 'N/A';
+    
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    // Format: Today/Yesterday at HH:MM or MM/DD/YYYY
+    if (date.toDateString() === today.toDateString()) {
+      return `Today at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    } else if (date.toDateString() === yesterday.toDateString()) {
+      return `Yesterday at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    } else {
+      return date.toLocaleDateString();
+    }
+  };
+  
+  // Helper function to format category name
+  const formatCategoryName = (category) => {
+    if (!category) return 'Uncategorized';
+    
+    // Add emoji based on category
+    let emoji = '';
+    switch (category) {
+      case 'food': emoji = '🍔 '; break;
+      case 'groceries': emoji = '🛒 '; break;
+      case 'transport': emoji = '🚗 '; break;
+      case 'accommodation': emoji = '🏠 '; break;
+      case 'entertainment': emoji = '🎭 '; break;
+      case 'shopping': emoji = '🛍️ '; break;
+      case 'utilities': emoji = '💡 '; break;
+      case 'medical': emoji = '🏥 '; break;
+      case 'travel': emoji = '✈️ '; break;
+      case 'other': emoji = '📦 '; break;
+      default: emoji = '📝 ';
+    }
+    
+    // Convert to title case (first letter capitalized)
+    const formattedName = category.charAt(0).toUpperCase() + category.slice(1);
+    return emoji + formattedName;
   };
 
   return (
@@ -518,14 +588,14 @@ const Profile = () => {
               transition={{ duration: 0.3 }}
               onClick={() => fileInputRef.current.click()}
             >
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                className="hidden" 
+              <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
                 accept="image/*"
                 onChange={handleFileChange}
               />
-              
+
               <div className="w-40 h-40 mx-auto rounded-full relative">
                 {/* More vibrant animated gradient border with rotation */}
                 <motion.div
@@ -564,9 +634,10 @@ const Profile = () => {
 
                 {/* Visible edit overlay on both mobile and desktop */}
                 <motion.div
-                  className={`absolute inset-0 z-20 flex items-center justify-center rounded-full cursor-pointer backdrop-blur-sm ${isUploading ? 'opacity-100' : 'md:opacity-0 md:hover:opacity-100 opacity-60'}`}
+                  className={`absolute inset-0 z-20 flex items-center justify-center rounded-full cursor-pointer backdrop-blur-sm ${isUploading ? 'opacity-100' : 'opacity-0 hover:opacity-100'}`}
                   style={{
-                    background: 'radial-gradient(circle, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.5) 100%)'
+                    background: 'radial-gradient(circle, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.5) 100%)',
+                    transition: 'opacity 0.2s ease-in-out'
                   }}
                   whileHover={{
                     scale: 1.05,
@@ -579,8 +650,8 @@ const Profile = () => {
                       <div className="font-medium mb-2">Uploading...</div>
                       <div className="text-white text-lg font-medium mb-1">{Math.round(uploadProgress)}%</div>
                       <div className="w-24 h-3 bg-gray-700 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-white" 
+                        <div
+                          className="h-full bg-white"
                           style={{ width: `${uploadProgress}%` }}
                         ></div>
                       </div>
@@ -795,26 +866,6 @@ const Profile = () => {
                   {userData.isEmailUser ? 'Update' : 'Create'}
                 </motion.button>
               </motion.div>
-              <motion.div
-                className="flex justify-between items-center p-4 rounded-lg"
-                style={{ backgroundColor: 'var(--background)' }}
-                transition={{ duration: 0.2 }}
-              >
-                <div>
-                  <p className="font-medium" style={{ color: 'var(--text-primary)' }}>Two-factor Authentication</p>
-                  <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Current status: Not enabled</p>
-                </div>
-                <motion.button
-                  className="px-4 py-2 text-sm rounded-full"
-                  style={{
-                    backgroundColor: 'var(--primary)',
-                    color: 'var(--text-on-primary)'
-                  }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  Enable
-                </motion.button>
-              </motion.div>
             </div>
           </motion.div>
 
@@ -841,22 +892,10 @@ const Profile = () => {
                 style={{ borderColor: 'var(--border)' }}
               >
                 <div>
-                  <h4 className="font-semibold" style={{ color: 'var(--text-primary)' }}>Email Notifications</h4>
-                  <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Receive email alerts for account activities</p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" className="sr-only peer" defaultChecked />
-                  <div className="w-12 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                </label>
-              </div>
-              <div
-                className="flex justify-between items-center pb-4 border-b"
-                style={{ borderColor: 'var(--border)' }}
-              >
-                <div>
                   <h4 className="font-semibold" style={{ color: 'var(--text-primary)' }}>Dark Mode</h4>
                   <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Switch between light and dark themes</p>
-                </div><label className="relative inline-flex items-center cursor-pointer">
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
                     className="sr-only peer"
@@ -894,26 +933,68 @@ const Profile = () => {
             transition={{ delay: 0.5, duration: 0.5 }}
           >
             <motion.h3
-              className="text-2xl font-bold mb-6"
+              className="text-2xl font-bold mb-6 flex items-center"
               style={{ color: 'var(--text-primary)' }}
               whileHover={{ x: 5 }}
               transition={{ duration: 0.2 }}
             >
-              Recent Activity
+              <FaClipboardList className="mr-3" /> Recent Activity
             </motion.h3>
-            <div
-              className="space-y-3 min-h-[100px] flex items-center justify-center"
-            >
-              <motion.p
-                className="text-sm italic text-center py-3"
-                style={{ color: 'var(--text-secondary)' }}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.6, duration: 0.5 }}
-              >
-                No recent activities to show
-              </motion.p>
-            </div>
+            
+            {activityLoading ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[var(--primary)]"></div>
+              </div>
+            ) : recentActivity.length > 0 ? (
+              <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+                {recentActivity.map((expense, idx) => {
+                  const date = expense.createdAt ? 
+                    new Date(expense.createdAt.seconds ? expense.createdAt.seconds * 1000 : expense.createdAt) : 
+                    null;
+                  
+                  return (
+                    <div key={idx} className="flex items-start space-x-4 p-3 rounded-lg hover:bg-[var(--background)] transition-colors">
+                      <div className="w-10 h-10 rounded-full bg-[var(--primary-light)] flex items-center justify-center flex-shrink-0">
+                        <span className="text-[var(--primary)]">
+                          <FaMoneyBillWave />
+                        </span>
+                      </div>
+                      
+                      <div className="flex-grow">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="font-medium">{expense.description}</p>
+                                                          <p className="text-xs text-[var(--text-secondary)]">
+                              {formatCategoryName(expense.category || 'uncategorized')} • {expense.kittyName}
+                              {expense.paidBy && expense.paidBy !== "You" && expense.paidById !== currentUser.uid && 
+                                ` • Paid by ${expense.paidBy}`}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-medium">{expense.currency || '₹'}{expense.amount.toFixed(2)}</p>
+                            <p className="text-xs text-[var(--text-secondary)]">
+                              {date ? formatDate(date) : 'N/A'}
+                            </p>
+                          </div>
+                        </div>
+                        {expense.notes && (
+                          <p className="text-sm mt-2 text-[var(--text-secondary)] bg-[var(--background)] p-2 rounded">
+                            {expense.notes}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="bg-[var(--background)] p-6 rounded-lg text-center">
+                <p className="text-[var(--text-secondary)]">No activity recorded yet</p>
+                <p className="text-sm text-[var(--text-secondary)] mt-2">
+                  Your recent expenses will appear here once you start adding them to your kitties
+                </p>
+              </div>
+            )}
           </motion.div>
         </motion.div>
       </div>

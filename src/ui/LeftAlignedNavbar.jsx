@@ -179,37 +179,13 @@ const Navbar = () => {
 
             <button
               onClick={toggleMenu}
-              className="relative w-10 h-10 flex items-center justify-center focus:outline-none rounded-full hover:bg-[var(--hover-subtle)] transition-all duration-300"
-              aria-label="Menu"
+              className="focus:outline-none transition-colors"
+              style={{ color: 'var(--text-primary)' }}
             >
               {isOpen ? (
                 <FaTimes size={24} style={{ color: 'var(--text-primary)' }} />
               ) : (
-                <div className="w-6 flex flex-col items-end justify-center">
-                  <span 
-                    className="block h-0.5 rounded-full transition-all duration-300" 
-                    style={{ 
-                      width: '100%', 
-                      backgroundColor: 'var(--primary)',
-                      marginBottom: '5px'
-                    }}
-                  ></span>
-                  <span 
-                    className="block h-0.5 rounded-full transition-all duration-300" 
-                    style={{ 
-                      width: '80%', 
-                      backgroundColor: 'var(--text-primary)',
-                      marginBottom: '5px'
-                    }}
-                  ></span>
-                  <span 
-                    className="block h-0.5 rounded-full transition-all duration-300" 
-                    style={{ 
-                      width: '60%', 
-                      backgroundColor: 'var(--primary)'
-                    }}
-                  ></span>
-                </div>
+                <FaBars size={24} style={{ color: 'var(--text-primary)' }} />
               )}
             </button>
           </div>
@@ -223,94 +199,102 @@ const Navbar = () => {
         style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)' }}
         onClick={toggleMenu}
       >
-        {/* Actual mobile menu container - now from bottom */}
+        {/* Actual mobile menu container */}
         <div
-          className={`fixed bottom-0 inset-x-0 transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-y-0' : 'translate-y-full'
+          className={`fixed inset-y-0 left-0 w-3/4 max-w-xs transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'
             }`}
-          style={{ 
-            backgroundColor: 'var(--surface)', 
-            boxShadow: 'var(--shadow-md)',
-            borderTopLeftRadius: '20px',
-            borderTopRightRadius: '20px',
-            maxHeight: '85vh',
-            overflowY: 'auto'
-          }}
+          style={{ backgroundColor: 'var(--surface)', boxShadow: 'var(--shadow-md)' }}
           onClick={(e) => e.stopPropagation()}
         >
+
           {/* Header with Logo and Close button */}
-          <div className="sticky top-0 backdrop-blur-sm bg-[var(--surface)]/90 pt-2 pb-4 px-4 border-b flex flex-col items-center" style={{ borderColor: 'var(--border)' }}>
-            {/* Drag handle */}
-            <div className="w-12 h-1.5 bg-gray-300 rounded-full mb-4"></div>
-            
-            <div className="flex items-center justify-between w-full">
-              <Link to="/" className="flex items-center" onClick={toggleMenu}>
-                <img className="h-7 w-auto mr-2" src="/logo.svg" alt="KittyPay Logo" />
-                <span className="font-bold text-lg" style={{ color: 'var(--text-primary)' }}>
-                  KittyPay
-                </span>
-              </Link>
-              <button
-                onClick={toggleMenu}
-                className="focus:outline-none p-2 rounded-full hover:bg-[var(--background)]"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                <FaTimes size={20} />
-              </button>
-            </div>
+          <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: 'var(--border)' }}>
+            <Link to="/" className="flex items-center" onClick={toggleMenu}>
+              <img className="h-7 w-auto mr-2" src="/logo.svg" alt="KittyPay Logo" />
+              <span className="font-bold text-lg" style={{ color: 'var(--text-primary)' }}>
+                KittyPay
+              </span>
+            </Link>
+            <button
+              onClick={toggleMenu}
+              className="focus:outline-none"
+              style={{ color: 'var(--text-primary)' }}
+            >
+              <FaTimes size={20} />
+            </button>
           </div>
 
           {/* Mobile menu content */}
-          <div className="px-6 py-6 space-y-4">
+          <div className="px-4 py-4 space-y-2">
             <div
-              className="block px-4 py-3 rounded-xl transition-colors cursor-pointer"
-              style={{ backgroundColor: 'var(--background)' }}
+              className="block px-3 py-3 rounded-md transition-colors cursor-pointer"
+              style={{ color: 'var(--text-primary)' }}
               onClick={() => handleNavClick('/')}
-            >
-              <div className="flex items-center">
-                <span className="mr-3 text-[var(--primary)]">🏠</span>
-                <span style={{ color: 'var(--text-primary)' }}>Home</span>
-              </div>
+              onMouseOver={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--primary-light)';
+                e.currentTarget.style.color = 'var(--primary)';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = 'var(--text-primary)';
+              }}>
+              Home
             </div>
-            
             <div
-              className="block px-4 py-3 rounded-xl transition-colors cursor-pointer"
-              style={{ backgroundColor: 'var(--background)' }}
+              className="block px-3 py-3 rounded-md transition-colors cursor-pointer"
+              style={{ color: 'var(--text-primary)' }}
               onClick={() => handleNavClick('/kitties')}
-            >
-              <div className="flex items-center">
-                <span className="mr-3 text-[var(--primary)]">💰</span>
-                <span style={{ color: 'var(--text-primary)' }}>My Kitties</span>
-              </div>
+              onMouseOver={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--primary-light)';
+                e.currentTarget.style.color = 'var(--primary)';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = 'var(--text-primary)';
+              }}>
+              My Kitties
             </div>
-            
             <div
-              className="block px-4 py-3 rounded-xl transition-colors cursor-pointer"
-              style={{ backgroundColor: 'var(--background)' }}
+              className="block px-3 py-3 rounded-md transition-colors cursor-pointer"
+              style={{ color: 'var(--text-primary)' }}
               onClick={() => handleNavClick('/dashboard')}
-            >
-              <div className="flex items-center">
-                <span className="mr-3 text-[var(--primary)]">📊</span>
-                <span style={{ color: 'var(--text-primary)' }}>Dashboard</span>
-              </div>
+              onMouseOver={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--primary-light)';
+                e.currentTarget.style.color = 'var(--primary)';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = 'var(--text-primary)';
+              }}>
+              Dashboard
             </div>
 
             {/* Theme toggle in mobile menu */}
-            <div
-              className="block px-4 py-3 rounded-xl transition-colors cursor-pointer"
-              style={{ backgroundColor: 'var(--background)' }}
-            >
+            <div className="block px-3 py-3 rounded-md transition-colors"
+              style={{ color: 'var(--text-primary)' }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--primary-light)';
+                e.currentTarget.style.color = 'var(--primary)';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = 'var(--text-primary)';
+              }}>
               <button
                 onClick={() => {
                   toggleTheme();
                 }}
                 className="flex items-center w-full text-left"
               >
-                <span className="mr-3 text-[var(--primary)]">
-                  {isDark ? <FaSun size={18} /> : <FaMoon size={18} />}
-                </span>
-                <span style={{ color: 'var(--text-primary)' }}>
-                  {isDark ? "Light Mode" : "Dark Mode"}
-                </span>
+                {isDark ? (
+                  <>
+                    <FaSun size={18} className="mr-2" /> Light Mode
+                  </>
+                ) : (
+                  <>
+                    <FaMoon size={18} className="mr-2" /> Dark Mode
+                  </>
+                )}
               </button>
             </div>
             
@@ -318,7 +302,7 @@ const Navbar = () => {
             <div className="pt-4 space-y-3">
               {isAuthenticated ? (
                 <div className="block w-full" onClick={() => handleNavClick('/profile')}>
-                  <button className="w-full px-4 py-3 rounded-xl transition-colors flex items-center justify-center"
+                  <button className="w-full px-4 py-2 rounded-md transition-colors flex items-center justify-center"
                     style={{
                       backgroundColor: 'var(--primary)',
                       color: 'white'
@@ -331,7 +315,7 @@ const Navbar = () => {
               ) : (
                 <>
                   <div className="block w-full" onClick={() => handleNavClick('/login')}>
-                    <button className="w-full px-4 py-3 rounded-xl transition-colors"
+                    <button className="w-full px-4 py-2 rounded-md transition-colors"
                       style={{
                         border: '1px solid var(--primary)',
                         color: 'var(--primary)',
@@ -343,7 +327,7 @@ const Navbar = () => {
                     </button>
                   </div>
                   <div className="block w-full" onClick={() => handleNavClick('/signup')}>
-                    <button className="w-full px-4 py-3 rounded-xl transition-colors"
+                    <button className="w-full px-4 py-2 rounded-md transition-colors"
                       style={{
                         backgroundColor: 'var(--primary)',
                         color: 'white'
