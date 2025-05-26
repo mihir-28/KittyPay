@@ -184,4 +184,4 @@ This project is licensed - see the [LICENSE.MD](./LICENSE.md) file for details.
 
 ---
 
-<p align="center">Crafted by <a href="https://mihirnagda.netlify.app">Mihir Nagda</a> with 💜 who believes that math should be done by computers and samosas 🥟 should be shared equally ^_^</p>
+<p align="center">Crafted by <a href="https://github.com/mihir-28/">Mihir Nagda</a> with 💜 who believes that math should be done by computers and samosas 🥟 should be shared equally ^_^</p>
