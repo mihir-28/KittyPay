@@ -90,15 +90,15 @@ const Navbar = () => {
               onMouseOut={(e) => e.currentTarget.style.color = 'var(--text-primary)'}>
               Home
             </Link>
-            <Link to="/dashboard" className="px-3 py-2 transition-colors" style={{ color: 'var(--text-primary)' }}
-              onMouseOver={(e) => e.currentTarget.style.color = 'var(--primary)'}
-              onMouseOut={(e) => e.currentTarget.style.color = 'var(--text-primary)'}>
-              Dashboard
-            </Link>
             <Link to="/kitties" className="px-3 py-2 transition-colors" style={{ color: 'var(--text-primary)' }}
               onMouseOver={(e) => e.currentTarget.style.color = 'var(--primary)'}
               onMouseOut={(e) => e.currentTarget.style.color = 'var(--text-primary)'}>
               My Kitties
+            </Link>
+            <Link to="/dashboard" className="px-3 py-2 transition-colors" style={{ color: 'var(--text-primary)' }}
+              onMouseOver={(e) => e.currentTarget.style.color = 'var(--primary)'}
+              onMouseOut={(e) => e.currentTarget.style.color = 'var(--text-primary)'}>
+              Dashboard
             </Link>
           </div>
 
@@ -243,20 +243,6 @@ const Navbar = () => {
             <div
               className="block px-3 py-3 rounded-md transition-colors cursor-pointer"
               style={{ color: 'var(--text-primary)' }}
-              onClick={() => handleNavClick('/dashboard')}
-              onMouseOver={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--primary-light)';
-                e.currentTarget.style.color = 'var(--primary)';
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.color = 'var(--text-primary)';
-              }}>
-              Dashboard
-            </div>
-            <div
-              className="block px-3 py-3 rounded-md transition-colors cursor-pointer"
-              style={{ color: 'var(--text-primary)' }}
               onClick={() => handleNavClick('/kitties')}
               onMouseOver={(e) => {
                 e.currentTarget.style.backgroundColor = 'var(--primary-light)';
@@ -267,6 +253,20 @@ const Navbar = () => {
                 e.currentTarget.style.color = 'var(--text-primary)';
               }}>
               My Kitties
+            </div>
+            <div
+              className="block px-3 py-3 rounded-md transition-colors cursor-pointer"
+              style={{ color: 'var(--text-primary)' }}
+              onClick={() => handleNavClick('/dashboard')}
+              onMouseOver={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--primary-light)';
+                e.currentTarget.style.color = 'var(--primary)';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = 'var(--text-primary)';
+              }}>
+              Dashboard
             </div>
 
             {/* Theme toggle in mobile menu */}

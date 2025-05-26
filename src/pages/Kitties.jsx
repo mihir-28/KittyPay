@@ -24,6 +24,7 @@ const Kitties = () => {
   const [expenseParticipants, setExpenseParticipants] = useState([]);
   const [expensePayer, setExpensePayer] = useState(""); // Who paid for the expense
   const [memberEmail, setMemberEmail] = useState("");
+  const [memberName, setMemberName] = useState("");
   const [expenseCategory, setExpenseCategory] = useState("");
   const [expenseNotes, setExpenseNotes] = useState("");
 
@@ -196,8 +197,8 @@ const Kitties = () => {
   const handleAddMember = async (e) => {
     e.preventDefault();
 
-    if (!memberEmail) {
-      toast.error("Please enter member email");
+    if (!memberEmail || !memberName) {
+      toast.error("Please enter both name and email");
       return;
     }
 
@@ -209,8 +210,6 @@ const Kitties = () => {
     const loadingToast = toast.loading("Adding member...");
 
     try {
-      const memberName = memberEmail.split('@')[0]; // Simple name from email
-
       const result = await addMember(currentKitty.id, {
         email: memberEmail,
         name: memberName
@@ -235,6 +234,7 @@ const Kitties = () => {
       toast.success("Member added successfully!");
       setShowMemberModal(false);
       setMemberEmail("");
+      setMemberName("");
     } catch (error) {
       console.error("Error adding member:", error);
       toast.error(error.message || "Failed to add member");
@@ -260,6 +260,7 @@ const Kitties = () => {
   const openMemberModal = (kitty) => {
     setCurrentKitty(kitty);
     setMemberEmail("");
+    setMemberName("");
     setShowMemberModal(true);
   };
 
@@ -369,7 +370,7 @@ const Kitties = () => {
                   key={kitty.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="bg-[var(--surface)] p-4 sm:p-5 rounded-xl shadow-sm border border-[var(--border)]"
+                  className="bg-[var(--surface)] p-4 sm:p-5 rounded-xl shadow-sm border border-[var(--border)] flex flex-col h-full"
                 >
                   <h2 className="text-xl font-bold mb-2">{kitty.name}</h2>
                   <p className="text-[var(--text-secondary)] mb-4">{kitty.description}</p>
@@ -408,7 +409,7 @@ const Kitties = () => {
                     </div>
                   </div>
 
-                  <div className="mb-4">
+                  <div className="mb-4 flex-grow">
                     <div className="flex justify-between items-center mb-2">
                       <h3 className="font-semibold">Recent Expenses</h3>
                       <button
@@ -461,10 +462,10 @@ const Kitties = () => {
                     )}
                   </div>
 
-                  <div className="flex justify-center gap-3 mt-4">
+                  <div className="flex justify-center gap-3 mt-auto">
                     <button
                       onClick={() => openExpenseModal(kitty)}
-                      className="flex items-center gap-1 bg-[var(--background)] hover:bg-[var(--background-hover)] py-2 px-3 rounded-lg"
+                      className="flex items-center gap-1 bg-[var(--background)] hover:bg-[var(--primary)] hover:text-white py-2 px-3 rounded-lg transition-all duration-200 hover:shadow-md"
                     >
                       <span className="flex items-center">
                         {kitty.currency || '$'}
@@ -473,13 +474,13 @@ const Kitties = () => {
                     </button>
                     <button
                       onClick={() => openMemberModal(kitty)}
-                      className="flex items-center gap-1 bg-[var(--background)] hover:bg-[var(--background-hover)] py-2 px-3 rounded-lg"
+                      className="flex items-center gap-1 bg-[var(--background)] hover:bg-[var(--primary)] hover:text-white py-2 px-3 rounded-lg transition-all duration-200 hover:shadow-md"
                     >
                       <FiUsers /> Add Member
                     </button>
                     <button
                       onClick={() => viewKittyDetails(kitty.id)}
-                      className="flex items-center gap-1 bg-[var(--background)] hover:bg-[var(--background-hover)] py-2 px-3 rounded-lg"
+                      className="flex items-center gap-1 bg-[var(--background)] hover:bg-[var(--primary)] hover:text-white py-2 px-3 rounded-lg transition-all duration-200 hover:shadow-md"
                     >
                       <FiEye /> View Details
                     </button>
@@ -791,11 +792,11 @@ const Kitties = () => {
           )}
 
           {showMemberModal && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50 overflow-y-auto">
               <motion.div
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="bg-[var(--surface)] p-5 sm:p-6 rounded-xl w-full max-w-md"
+                className="bg-[var(--surface)] p-5 sm:p-6 rounded-xl w-full max-w-md my-4 overflow-hidden"
               >
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-xl font-bold">Add Member to {currentKitty.name}</h2>
@@ -805,6 +806,21 @@ const Kitties = () => {
                 </div>
 
                 <form onSubmit={handleAddMember}>
+                  <div className="mb-4">
+                    <label htmlFor="memberName" className="block mb-2 text-sm font-medium">
+                      Name*
+                    </label>
+                    <input
+                      type="text"
+                      id="memberName"
+                      value={memberName}
+                      onChange={e => setMemberName(e.target.value)}
+                      className="w-full px-4 py-2 bg-[var(--background)] border border-[var(--border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
+                      placeholder="John Doe"
+                      required
+                    />
+                  </div>
+
                   <div className="mb-6">
                     <label htmlFor="memberEmail" className="block mb-2 text-sm font-medium">
                       Email Address*
