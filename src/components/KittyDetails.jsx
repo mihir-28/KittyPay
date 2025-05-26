@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
-import { getKittyById, updateKittyExpense, updateKittySettlement, deleteKittyExpense } from "../firebase/kitties";
-import { FiArrowLeft, FiDollarSign, FiUsers, FiEdit2, FiCheck, FiX, FiTrash2 } from "react-icons/fi";
+import { getKittyById, updateKittyExpense, updateKittySettlement, deleteKittyExpense, updateKittyMember, removeKittyMember } from "../firebase/kitties";
+import { FiArrowLeft, FiDollarSign, FiUsers, FiEdit2, FiCheck, FiX, FiTrash2, FiUser } from "react-icons/fi";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 
@@ -9,6 +9,7 @@ const KittyDetails = ({ kittyId, onBack }) => {
   const [kitty, setKitty] = useState(null);
   const [loading, setLoading] = useState(true);
   const [editingExpense, setEditingExpense] = useState(null);
+  const [editingMember, setEditingMember] = useState(null);
   const [settledTransactions, setSettledTransactions] = useState([]);
   const { currentUser } = useAuth();
 
@@ -173,7 +174,15 @@ const KittyDetails = ({ kittyId, onBack }) => {
       // Update in Firebase
       await updateKittySettlement(kittyId, updatedSettledTransactions);
       
-      toast.success(isSettled ? "Settlement marked as unsettled" : "Settlement marked as settled");
+      if (isSettled) {
+        toast.success("Settlement marked as unsettled", {
+          icon: <FiX className="text-amber-500" />
+        });
+      } else {
+        toast.success("Settlement marked as settled", {
+          icon: <FiCheck className="text-green-500" />
+        });
+      }
     } catch (error) {
       console.error("Error updating settlement status:", error);
       toast.error("Failed to update settlement status");
@@ -191,18 +200,18 @@ const KittyDetails = ({ kittyId, onBack }) => {
   const handleSaveExpense = async (updatedExpense) => {
     try {
       await updateKittyExpense(kittyId, updatedExpense);
-      
+
       // Update local state
-      const updatedExpenses = kitty.expenses.map(exp => 
+      const updatedExpenses = kitty.expenses.map(exp =>
         exp.id === updatedExpense.id ? updatedExpense : exp
       );
-      
+
       setKitty({
         ...kitty,
         expenses: updatedExpenses,
         totalAmount: updatedExpenses.reduce((sum, exp) => sum + exp.amount, 0)
       });
-      
+
       setEditingExpense(null);
       toast.success("Expense updated successfully");
     } catch (error) {
@@ -214,21 +223,21 @@ const KittyDetails = ({ kittyId, onBack }) => {
   const handleDeleteExpense = async (expense) => {
     try {
       const result = await deleteKittyExpense(kittyId, expense.id);
-      
+
       if (result.error) {
         throw new Error(result.error);
       }
-      
+
       // Update local state
       const updatedExpenses = kitty.expenses.filter(exp => exp.id !== expense.id);
       const newTotalAmount = updatedExpenses.reduce((sum, exp) => sum + exp.amount, 0);
-      
+
       setKitty({
         ...kitty,
         expenses: updatedExpenses,
         totalAmount: newTotalAmount
       });
-      
+
       setEditingExpense(null);
       toast.success("Expense deleted successfully");
     } catch (error) {
@@ -237,14 +246,140 @@ const KittyDetails = ({ kittyId, onBack }) => {
     }
   };
 
+  const handleEditMember = (member) => {
+    setEditingMember(member);
+  };
+
+  const handleCancelEditMember = () => {
+    setEditingMember(null);
+  };
+
+  const handleSaveMember = async (updatedMember) => {
+    try {
+      const memberId = updatedMember.userId || updatedMember.email;
+      const result = await updateKittyMember(kittyId, memberId, {
+        name: updatedMember.name,
+        email: updatedMember.email
+      });
+
+      if (result.error) {
+        throw new Error(result.error);
+      }
+
+      // Update local state
+      const updatedMembers = kitty.members.map(member => {
+        const memberIdentifier = member.userId || member.email;
+        if (memberIdentifier === memberId) {
+          return { ...member, ...updatedMember };
+        }
+        return member;
+      });
+
+      // Update expenses where this member is involved
+      const updatedExpenses = kitty.expenses.map(expense => {
+        // Update participants
+        const updatedParticipants = expense.participants?.map(participant => {
+          const participantId = participant.userId || participant.email;
+          if (participantId === memberId) {
+            return { ...participant, name: updatedMember.name, email: updatedMember.email };
+          }
+          return participant;
+        }) || [];
+
+        // Update payer name if this member is the payer
+        const updatedPaidBy = expense.paidById === memberId ? updatedMember.name : expense.paidBy;
+
+        return {
+          ...expense,
+          participants: updatedParticipants,
+          paidBy: updatedPaidBy
+        };
+      });
+
+      setKitty({
+        ...kitty,
+        members: updatedMembers,
+        expenses: updatedExpenses
+      });
+
+      setEditingMember(null);
+      toast.success("Member updated successfully");
+    } catch (error) {
+      console.error("Error updating member:", error);
+      toast.error("Failed to update member");
+    }
+  };
+
+  const handleDeleteMember = async (member) => {
+    try {
+      const memberId = member.userId || member.email;
+      
+      // Cannot delete the owner
+      if (member.isOwner) {
+        toast.error("Cannot remove the owner of the kitty");
+        return;
+      }
+      
+      // Cannot delete yourself (for security)
+      if (member.userId === currentUser.uid) {
+        toast.error("You cannot remove yourself. Leave the kitty instead.");
+        return;
+      }
+      
+      const result = await removeKittyMember(kittyId, memberId);
+      
+      if (result.error) {
+        throw new Error(result.error);
+      }
+      
+      // Update local state - remove the member
+      const updatedMembers = kitty.members.filter(m => {
+        const mId = m.userId || m.email;
+        return mId !== memberId;
+      });
+      
+      // Update expenses to reflect member removal
+      const updatedExpenses = kitty.expenses.map(expense => {
+        // Skip if this member is the payer of the expense
+        if (expense.paidById === memberId) {
+          return expense;
+        }
+        
+        // Remove member from participants
+        const updatedParticipants = expense.participants?.filter(participant => {
+          const participantId = participant.userId || participant.email;
+          return participantId !== memberId;
+        }) || [];
+        
+        return {
+          ...expense,
+          participants: updatedParticipants
+        };
+      });
+      
+      setKitty({
+        ...kitty,
+        members: updatedMembers,
+        expenses: updatedExpenses
+      });
+      
+      setEditingMember(null);
+      toast.success("Member removed successfully");
+    } catch (error) {
+      console.error("Error removing member:", error);
+      toast.error("Failed to remove member");
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center py-20">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[var(--primary)]"></div>
       </div>
-    );  }  if (!kitty) return null;
+    );
+  } if (!kitty) return null;
   return (
-    <div className="w-full mx-auto px-3 sm:px-6 md:px-8 py-4">
+    <div className="w-full mx-auto max-w-7xl px-3 sm:px-6 py-4">
       <button
         onClick={onBack}
         className="flex items-center mb-6 text-[var(--primary)] hover:underline"
@@ -252,19 +387,49 @@ const KittyDetails = ({ kittyId, onBack }) => {
         <FiArrowLeft className="mr-2" /> Back to Kitties
       </button>
 
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold mb-2">{kitty.name}</h1>
-        <p className="text-[var(--text-secondary)]">{kitty.description}</p>
-      </div>      {/* Main content with 30% left, 70% right layout on desktop */}
-      <div className="flex flex-col lg:flex-row gap-4">
-        {/* Left sidebar - 30% on desktop */}
-        <div className="w-full lg:w-[30%] space-y-4">          {/* Members section */}
-          <div className="bg-[var(--surface)] p-3 md:p-4 rounded-xl shadow-sm border border-[var(--border)]">
-            <h2 className="text-lg font-semibold mb-3">Members ({kitty.members.length})</h2>
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+        {/* Header section - spans full width */}
+        <div className="xl:col-span-12 bg-[var(--surface)] p-4 md:p-6 rounded-xl shadow-sm border border-[var(--border)]">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+            <div>
+              <h1 className="text-2xl font-bold mb-2">{kitty.name}</h1>
+              <p className="text-[var(--text-secondary)] max-w-2xl">{kitty.description}</p>
+            </div>
+            <div className="mt-4 md:mt-0 flex items-center">
+              <div className="flex -space-x-2 mr-4">
+                {kitty.members.slice(0, 3).map((member, idx) => (
+                  <div 
+                    key={member.userId || idx} 
+                    className="w-10 h-10 rounded-full bg-[var(--primary)] flex items-center justify-center text-white border-2 border-[var(--surface)]"
+                    title={member.name}
+                  >
+                    {member.name.charAt(0).toUpperCase()}
+                  </div>
+                ))}
+                {kitty.members.length > 3 && (
+                  <div className="w-10 h-10 rounded-full bg-[var(--background)] flex items-center justify-center text-[var(--text-primary)] border-2 border-[var(--surface)]">
+                    +{kitty.members.length - 3}
+                  </div>
+                )}
+              </div>
+              <div className="font-semibold text-xl">
+                {kitty.currency || '$'}{kitty.totalAmount.toFixed(2)}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Left sidebar - members and balances */}
+        <div className="xl:col-span-4 space-y-6">
+          {/* Members section */}
+          <div className="bg-[var(--surface)] p-4 rounded-xl shadow-sm border border-[var(--border)]">
+            <h2 className="text-lg font-semibold mb-3 flex items-center">
+              <FiUsers className="mr-2" /> Members ({kitty.members.length})
+            </h2>
             <div className="bg-[var(--background)] p-3 rounded-lg">
-              <ul className="space-y-2">
+              <ul className="divide-y divide-[var(--border)]">
                 {kitty.members.map((member, idx) => (
-                  <li key={member.userId || idx} className="flex items-center justify-between">
+                  <li key={member.userId || idx} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
                     <div className="flex items-center">
                       <div className="w-8 h-8 bg-[var(--primary)] rounded-full flex items-center justify-center text-white">
                         {member.name.charAt(0).toUpperCase()}
@@ -274,40 +439,42 @@ const KittyDetails = ({ kittyId, onBack }) => {
                         <div className="text-xs text-[var(--text-secondary)]">{member.email}</div>
                       </div>
                     </div>
+                    <button
+                      onClick={() => handleEditMember(member)}
+                      className="p-1.5 text-[var(--text-secondary)] hover:text-[var(--primary)] hover:bg-[var(--surface)] rounded-full"
+                      title="Edit member"
+                    >
+                      <FiEdit2 size={16} />
+                    </button>
                   </li>
                 ))}
               </ul>
             </div>
-          </div>          {/* Summary section */}
-          <div className="bg-[var(--surface)] p-3 md:p-4 rounded-xl shadow-sm border border-[var(--border)]">
-            <h2 className="text-lg font-semibold mb-3">Summary</h2>
-            <div className="bg-[var(--background)] p-3 rounded-lg">
-              <div className="flex justify-between mb-3 pb-3 border-b border-[var(--border)]">
-                <span>Total spent</span>
-                <span className="font-semibold">{kitty.currency || '$'}{kitty.totalAmount.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Your share</span>
-                <span className="font-semibold">{kitty.currency || '$'}{balances.find(b => b.name === "You")?.shouldPay.toFixed(2) || '0.00'}</span>
-              </div>
-            </div>
           </div>
 
-          {/* Your balance card - only visible on mobile */}
-          <div className="lg:hidden">
+          {/* Member Balances section */}
+          <div className="bg-[var(--surface)] p-4 rounded-xl shadow-sm border border-[var(--border)]">
+            <h2 className="text-lg font-semibold mb-3 flex items-center">
+              <FiDollarSign className="mr-2" /> Balances
+            </h2>
+            
+            {/* Your balance highlighted card - only visible for your own balance */}
             {balances.filter(b => b.name === "You").map((balance, idx) => (
               <div
                 key={idx}
-                className={`p-3 md:p-4 rounded-lg bg-[var(--surface)] border border-[var(--border)] ${
-                  balance.owes > 0 ? 'border-l-4 border-l-red-400' :
-                  balance.owes < 0 ? 'border-l-4 border-l-green-400' : ''
+                className={`p-4 mb-4 rounded-lg ${
+                  balance.owes > 0 ? 'bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800/30' :
+                  balance.owes < 0 ? 'bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800/30' :
+                  'bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800/30'
                 }`}
               >
-                <div className="flex items-center mb-3">
-                  <div className="w-8 h-8 bg-[var(--primary)] rounded-full flex items-center justify-center text-white">
-                    {balance.name.charAt(0).toUpperCase()}
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 bg-[var(--primary)] rounded-full flex items-center justify-center text-white">
+                      {balance.name.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="ml-3 font-medium">Your Balance</span>
                   </div>
-                  <span className="ml-3 font-medium">Your Balance</span>
                 </div>
 
                 <div className="space-y-2">
@@ -342,11 +509,50 @@ const KittyDetails = ({ kittyId, onBack }) => {
                 </div>
               </div>
             ))}
-          </div>        </div>
+            
+            {/* Other members balances */}
+            <div className="bg-[var(--background)] p-3 rounded-lg">
+              <ul className="divide-y divide-[var(--border)]">
+                {balances.filter(b => b.name !== "You").map((balance, idx) => (
+                  <li key={balance.userId || idx} className="py-3 first:pt-0 last:pb-0">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center">
+                        <div className="w-6 h-6 bg-[var(--primary)] rounded-full flex items-center justify-center text-white text-xs">
+                          {balance.name.charAt(0).toUpperCase()}
+                        </div>
+                        <span className="ml-2 font-medium">{balance.name}</span>
+                      </div>
+                      
+                      {balance.owes > 0 ? (
+                        <span className="text-sm text-red-600 dark:text-red-400 font-semibold">
+                          Owes {kitty.currency || '$'}{balance.owes.toFixed(2)}
+                        </span>
+                      ) : balance.owes < 0 ? (
+                        <span className="text-sm text-green-600 dark:text-green-400 font-semibold">
+                          Gets {kitty.currency || '$'}{Math.abs(balance.owes).toFixed(2)}
+                        </span>
+                      ) : (
+                        <span className="text-sm font-semibold">
+                          Settled
+                        </span>
+                      )}
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-2 text-xs text-[var(--text-secondary)]">
+                      <div>Paid: {kitty.currency || '$'}{balance.paid.toFixed(2)}</div>
+                      <div>Share: {kitty.currency || '$'}{balance.shouldPay.toFixed(2)}</div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
 
-        {/* Right content area - 70% on desktop */}
-        <div className="w-full lg:w-[70%] space-y-4">          {/* Expenses section */}
-          <div className="bg-[var(--surface)] p-3 md:p-4 rounded-xl shadow-sm border border-[var(--border)]">
+        {/* Right content area - expenses and settlements */}
+        <div className="xl:col-span-8 space-y-6">
+          {/* Expenses section */}
+          <div className="bg-[var(--surface)] p-4 rounded-xl shadow-sm border border-[var(--border)]">
             <h2 className="text-lg font-semibold mb-3">All Expenses</h2>
             {kitty.expenses && kitty.expenses.length > 0 ? (
               <>
@@ -358,7 +564,6 @@ const KittyDetails = ({ kittyId, onBack }) => {
                         <th className="py-3 px-4 text-left">Description</th>
                         <th className="py-3 px-4 text-left">Category</th>
                         <th className="py-3 px-4 text-left">Paid By</th>
-                        <th className="py-3 px-4 text-left">Shared With</th>
                         <th className="py-3 px-4 text-right">Amount</th>
                         <th className="py-3 px-4 text-right">Date</th>
                         <th className="py-3 px-4 text-center">Action</th>
@@ -366,11 +571,11 @@ const KittyDetails = ({ kittyId, onBack }) => {
                     </thead>
                     <tbody>
                       {kitty.expenses.map((expense, idx) => (
-                        <tr key={expense.id || idx} className="border-t border-[var(--border)]">
+                        <tr key={expense.id || idx} className="border-t border-[var(--border)] hover:bg-[var(--surface)]/50">
                           <td className="py-3 px-4">
-                            {expense.description}
+                            <div className="font-medium">{expense.description}</div>
                             {expense.notes && (
-                              <div className="text-xs text-[var(--text-secondary)] mt-1">
+                              <div className="text-xs text-[var(--text-secondary)] mt-1 line-clamp-1">
                                 {expense.notes}
                               </div>
                             )}
@@ -395,23 +600,6 @@ const KittyDetails = ({ kittyId, onBack }) => {
                             )}
                           </td>
                           <td className="py-3 px-4">{expense.paidBy}</td>
-                          <td className="py-3 px-4">
-                            {expense.participants ? (
-                              <div className="flex flex-wrap gap-1">
-                                {expense.participants.length === kitty.members.length ? (
-                                  <span className="text-sm text-[var(--text-secondary)]">Everyone</span>
-                                ) : (
-                                  expense.participants.map((p, i) => (
-                                    <span key={i} className="text-sm bg-[var(--background)] px-1.5 py-0.5 rounded">
-                                      {p.name}
-                                    </span>
-                                  ))
-                                )}
-                              </div>
-                            ) : (
-                              <span className="text-sm text-[var(--text-secondary)]">Everyone</span>
-                            )}
-                          </td>
                           <td className="py-3 px-4 text-right font-medium">{kitty.currency || '$'}{expense.amount.toFixed(2)}</td>
                           <td className="py-3 px-4 text-right text-[var(--text-secondary)]">
                             {expense.createdAt ? new Date(expense.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}
@@ -432,7 +620,7 @@ const KittyDetails = ({ kittyId, onBack }) => {
                 </div>
 
                 {/* Card view for mobile */}
-                <div className="md:hidden space-y-4">
+                <div className="md:hidden space-y-3">
                   {kitty.expenses.map((expense, idx) => (
                     <div key={expense.id || idx} className="bg-[var(--background)] rounded-lg p-4 shadow-sm border border-[var(--border)]">
                       <div className="flex justify-between items-start mb-3">
@@ -512,73 +700,16 @@ const KittyDetails = ({ kittyId, onBack }) => {
                 </div>
               </>
             ) : (
-              <p className="text-center py-4 bg-[var(--background)] rounded-lg text-[var(--text-secondary)]">
+              <p className="text-center py-6 bg-[var(--background)] rounded-lg text-[var(--text-secondary)]">
                 No expenses yet
               </p>
             )}
-          </div>          {/* Member Balances section */}
-          <div className="bg-[var(--surface)] p-3 md:p-4 rounded-xl shadow-sm border border-[var(--border)]">
-            <h2 className="text-xl font-bold mb-3">Member Balances</h2>
-            <p className="mb-3 text-sm text-[var(--text-secondary)]">
-              These balances show what each person has paid, what they should have paid based on their participation in expenses, and their net balance.
-            </p>
+          </div>          
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {balances.map((balance, idx) => (
-                <div
-                  key={balance.userId || idx}
-                  className={`p-3 md:p-4 rounded-lg ${
-                    balance.owes > 0 ? 'bg-red-50 dark:bg-red-900/10' :
-                    balance.owes < 0 ? 'bg-green-50 dark:bg-green-900/10' :
-                    'bg-[var(--background)]'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center">
-                      <div className="w-8 h-8 bg-[var(--primary)] rounded-full flex items-center justify-center text-white">
-                        {balance.name.charAt(0).toUpperCase()}
-                      </div>
-                      <span className="ml-3 font-medium">{balance.name}</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span>Total paid</span>
-                      <span className="font-medium">{kitty.currency || '$'}{balance.paid.toFixed(2)}</span>
-                    </div>
-
-                    <div className="flex justify-between">
-                      <span>Fair share</span>
-                      <span className="font-medium">{kitty.currency || '$'}{balance.shouldPay.toFixed(2)}</span>
-                    </div>
-
-                    <div className="h-px bg-[var(--border)] my-2"></div>
-
-                    {balance.owes > 0 ? (
-                      <div className="flex justify-between text-red-600 dark:text-red-400">
-                        <span>Owes others</span>
-                        <span className="font-bold">{kitty.currency || '$'}{balance.owes.toFixed(2)}</span>
-                      </div>
-                    ) : balance.owes < 0 ? (
-                      <div className="flex justify-between text-green-600 dark:text-green-400">
-                        <span>Gets back</span>
-                        <span className="font-bold">{kitty.currency || '$'}{Math.abs(balance.owes).toFixed(2)}</span>
-                      </div>
-                    ) : (
-                      <div className="flex justify-between">
-                        <span>Balance</span>
-                        <span className="font-bold">{kitty.currency || '$'}0.00</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>          {/* Net Settlement Plan section */}
-          <div className="bg-[var(--surface)] p-3 md:p-4 rounded-xl shadow-sm border border-[var(--border)]">
-            <h3 className="text-lg font-semibold mb-3">Net Settlement Plan</h3>
-            <div className="bg-[var(--background)] p-3 rounded-lg">
+          {/* Net Settlement Plan section */}
+          <div className="bg-[var(--surface)] p-4 rounded-xl shadow-sm border border-[var(--border)]">
+            <h3 className="text-lg font-semibold mb-3">Settlement Plan</h3>
+            <div className="bg-[var(--background)] p-4 rounded-lg">
               <p className="mb-3 text-sm text-[var(--text-secondary)]">
                 The following transactions will settle all balances with the minimum number of payments:
               </p>
@@ -592,10 +723,9 @@ const KittyDetails = ({ kittyId, onBack }) => {
                   return (
                     <div
                       key={idx}
-                      className={`flex flex-col sm:flex-row justify-between items-center p-3 rounded-md ${
-                        isSettled 
-                          ? 'bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-900/30' 
-                          : 'bg-[var(--surface)] border border-[var(--border)]'
+                      className={`flex flex-col sm:flex-row justify-between items-center p-3 rounded-md ${isSettled
+                        ? 'bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-900/30' 
+                        : 'bg-[var(--surface)] border border-[var(--border)]'
                       } shadow-sm`}
                     >
                       {/* Mobile layout (stacked) */}
@@ -617,10 +747,9 @@ const KittyDetails = ({ kittyId, onBack }) => {
                         </div>
                         <button
                           onClick={() => handleSettlementToggle(settlement, idx)}
-                          className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            isSettled 
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
-                              : 'bg-[var(--background)] text-[var(--text-secondary)]'
+                          className={`px-3 py-1 rounded-full text-xs font-medium ${isSettled
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+                            : 'bg-[var(--background)] text-[var(--text-secondary)]'
                           }`}
                         >
                           {isSettled ? 'Settled' : 'Mark settled'}
@@ -652,10 +781,9 @@ const KittyDetails = ({ kittyId, onBack }) => {
                       </div>
                       <button
                         onClick={() => handleSettlementToggle(settlement, idx)}
-                        className={`hidden sm:flex items-center px-3 py-1.5 rounded-full text-sm font-medium ${
-                          isSettled 
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
-                            : 'bg-[var(--background)] text-[var(--text-secondary)] hover:bg-[var(--border)]'
+                        className={`hidden sm:flex items-center px-3 py-1.5 rounded-full text-sm font-medium ${isSettled
+                          ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+                          : 'bg-[var(--background)] text-[var(--text-secondary)] hover:bg-[var(--border)]'
                         }`}
                       >
                         {isSettled ? (
@@ -673,12 +801,12 @@ const KittyDetails = ({ kittyId, onBack }) => {
               </div>
 
               {calculateSettlements().length === 0 && (
-                <div className="text-center py-6 text-[var(--text-secondary)] bg-[var(--surface)] rounded-md border border-[var(--border)] shadow-sm">
-                  <span className="font-medium">Everyone is settled up!</span>
-                  <p className="text-sm mt-1">All balances are even.</p>
+                <div className="text-center py-8 bg-[var(--surface)] rounded-md border border-[var(--border)] shadow-sm">
+                  <span className="font-medium text-lg">Everyone is settled up!</span>
+                  <p className="text-sm mt-1 text-[var(--text-secondary)]">All balances are even.</p>
                 </div>
               )}
-
+              
               <p className="mt-4 text-xs text-[var(--text-secondary)]">
                 This plan minimizes the total number of transactions needed to settle all balances in the kitty.
                 Mark transactions as settled once they've been completed.
@@ -698,6 +826,18 @@ const KittyDetails = ({ kittyId, onBack }) => {
           onDelete={handleDeleteExpense}
         />
       )}
+
+      {/* Edit Member Modal */}
+      {editingMember && (
+        <MemberEditForm
+          member={editingMember}
+          kitty={kitty}
+          onSave={handleSaveMember}
+          onCancel={handleCancelEditMember}
+          onDelete={handleDeleteMember}
+          currentUser={currentUser}
+        />
+      )}
     </div>
   );
 };
@@ -711,12 +851,12 @@ const ExpenseEditForm = ({ expense, onSave, onCancel, onDelete, kitty }) => {
     notes: expense.notes || '',
     paidById: expense.paidById || '',
     participants: expense.participants || [],
-    date: expense.createdAt ? 
+    date: expense.createdAt ?
       new Date(expense.createdAt.seconds ? expense.createdAt.seconds * 1000 : expense.createdAt)
-        .toISOString().substring(0, 10) : 
+        .toISOString().substring(0, 10) :
       new Date().toISOString().substring(0, 10)
   });
-  
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     if (name === "amount") {
@@ -727,20 +867,20 @@ const ExpenseEditForm = ({ expense, onSave, onCancel, onDelete, kitty }) => {
   };
 
   const handleParticipantToggle = (participantId) => {
-    const isSelected = formData.participants.some(p => 
-      (p.userId && p.userId === participantId) || 
+    const isSelected = formData.participants.some(p =>
+      (p.userId && p.userId === participantId) ||
       (!p.userId && p.email === participantId)
     );
-    
+
     let updatedParticipants;
     if (isSelected) {
-      updatedParticipants = formData.participants.filter(p => 
-        !((p.userId && p.userId === participantId) || 
-        (!p.userId && p.email === participantId))
+      updatedParticipants = formData.participants.filter(p =>
+        !((p.userId && p.userId === participantId) ||
+          (!p.userId && p.email === participantId))
       );
     } else {
-      const member = kitty.members.find(m => 
-        (m.userId && m.userId === participantId) || 
+      const member = kitty.members.find(m =>
+        (m.userId && m.userId === participantId) ||
         (!m.userId && m.email === participantId)
       );
       if (member) {
@@ -753,7 +893,7 @@ const ExpenseEditForm = ({ expense, onSave, onCancel, onDelete, kitty }) => {
         updatedParticipants = formData.participants;
       }
     }
-    
+
     setFormData({ ...formData, participants: updatedParticipants });
   };
 
@@ -769,10 +909,10 @@ const ExpenseEditForm = ({ expense, onSave, onCancel, onDelete, kitty }) => {
       setFormData({ ...formData, participants: [] });
     }
   };
-  
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     // Get the payer information
     const payer = kitty.members.find(m =>
       (m.userId === formData.paidById) ||
@@ -788,12 +928,12 @@ const ExpenseEditForm = ({ expense, onSave, onCancel, onDelete, kitty }) => {
       toast.error("Please select at least one participant");
       return;
     }
-    
+
     // Convert the date string to a Date object
     const expenseDate = new Date(formData.date);
-    
-    onSave({ 
-      ...expense, 
+
+    onSave({
+      ...expense,
       description: formData.description,
       amount: formData.amount,
       category: formData.category,
@@ -813,12 +953,12 @@ const ExpenseEditForm = ({ expense, onSave, onCancel, onDelete, kitty }) => {
       onDelete(expense);
     }
   };
-  
+
   return (
     <motion.div
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto"
     >
       <div className="bg-[var(--surface)] rounded-xl shadow-lg max-w-2xl w-full my-4 overflow-hidden">
         {/* Modal Header */}
@@ -831,7 +971,7 @@ const ExpenseEditForm = ({ expense, onSave, onCancel, onDelete, kitty }) => {
             <FiX size={24} />
           </button>
         </div>
-        
+
         {/* Modal Body */}
         <div className="p-4 sm:p-5">
           <form onSubmit={handleSubmit} className="max-h-[60vh] overflow-y-auto scrollbar-hide px-0.5">
@@ -986,11 +1126,11 @@ const ExpenseEditForm = ({ expense, onSave, onCancel, onDelete, kitty }) => {
                   </div>
                   <div className="bg-[var(--background)] p-1.5 rounded-lg max-h-28 sm:max-h-32 overflow-y-auto scrollbar-hide mb-1 sm:mb-2 border border-[var(--border)]">
                     {kitty.members.map((member, idx) => {
-                      const isSelected = formData.participants.some(p => 
-                        (p.userId && p.userId === (member.userId || member.email)) || 
+                      const isSelected = formData.participants.some(p =>
+                        (p.userId && p.userId === (member.userId || member.email)) ||
                         (!p.userId && p.email === (member.userId || member.email))
                       );
-                      
+
                       return (
                         <div
                           key={member.userId || member.email || idx}
@@ -1029,6 +1169,164 @@ const ExpenseEditForm = ({ expense, onSave, onCancel, onDelete, kitty }) => {
               >
                 <FiTrash2 className="mr-1" /> Delete
               </button>
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={onCancel}
+                  className="px-3 py-2 border border-[var(--border)] rounded-lg hover:bg-[var(--background)]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:opacity-90"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+// Member edit form component
+const MemberEditForm = ({ member, onSave, onCancel, onDelete, kitty, currentUser }) => {
+  const [formData, setFormData] = useState({
+    name: member.name,
+    email: member.email,
+    userId: member.userId
+  });
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    // Validate inputs
+    if (!formData.name.trim()) {
+      toast.error("Name cannot be empty");
+      return;
+    }
+
+    if (!formData.email.trim() || !/\S+@\S+\.\S+/.test(formData.email)) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+
+    onSave(formData);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (window.confirm(`Are you sure you want to remove ${member.name} from this kitty? This cannot be undone.`)) {
+      onDelete(member);
+    }
+  };
+
+  const isCurrentUser = member.userId === currentUser.uid;
+  const isOwner = member.isOwner;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto"
+    >
+      <div className="bg-[var(--surface)] rounded-xl shadow-lg max-w-md w-full my-4 overflow-hidden">
+        {/* Modal Header */}
+        <div className="flex justify-between items-center p-4 sm:p-5 border-b border-[var(--border)]">
+          <h2 className="text-xl font-bold">
+            {isCurrentUser ? "Edit Your Details" : `Edit Member: ${member.name}`}
+          </h2>
+          <button
+            onClick={onCancel}
+            className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          >
+            <FiX size={24} />
+          </button>
+        </div>
+
+        {/* Modal Body */}
+        <div className="p-4 sm:p-5">
+          <form onSubmit={handleSubmit}>
+            <div className="mb-4">
+              <label htmlFor="memberName" className="block mb-1 sm:mb-2 text-sm font-medium">
+                Name*
+              </label>
+              <input
+                type="text"
+                id="memberName"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--border)] rounded-lg focus:outline-none focus:ring-1 focus:ring-[var(--primary)] focus:border-[var(--primary)]"
+                placeholder="Member name"
+                required
+              />
+            </div>
+
+            <div className="mb-4">
+              <label htmlFor="memberEmail" className="block mb-1 sm:mb-2 text-sm font-medium">
+                Email*
+              </label>
+              <input
+                type="email"
+                id="memberEmail"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--border)] rounded-lg focus:outline-none focus:ring-1 focus:ring-[var(--primary)] focus:border-[var(--primary)]"
+                placeholder="member@example.com"
+                required
+              />
+            </div>
+
+            {isOwner && (
+              <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/10 rounded-lg border border-amber-200 dark:border-amber-800/30">
+                <div className="flex items-center">
+                  <div className="text-amber-600 dark:text-amber-400 mr-2">
+                    <FiUsers size={18} />
+                  </div>
+                  <p className="text-sm text-amber-700 dark:text-amber-300">
+                    This member is the owner of the kitty and cannot be removed.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {isCurrentUser && (
+              <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-200 dark:border-blue-800/30">
+                <div className="flex items-center">
+                  <div className="text-blue-600 dark:text-blue-400 mr-2">
+                    <FiUser size={18} />
+                  </div>
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                    This is you. Changes will update how you appear to others in this kitty.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Footer with action buttons */}
+            <div className="flex justify-between mt-5 sm:mt-6">
+              {!isOwner && !isCurrentUser && (
+                <button
+                  type="button"
+                  onClick={handleDeleteConfirm}
+                  className="px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg flex items-center"
+                >
+                  <FiTrash2 className="mr-1" /> Remove
+                </button>
+              )}
+              {(isOwner || isCurrentUser) && (
+                <div></div> // Empty div to maintain spacing when delete button is hidden
+              )}
               
               <div className="flex gap-3">
                 <button

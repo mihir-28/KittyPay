@@ -1,6 +1,6 @@
-[![Netlify Status](https://api.netlify.com/api/v1/badges/f7d2c417-eab4-4db0-8cce-e4821643f431/deploy-status)](https://app.netlify.com/projects/kittypay/deploys)
+[![Netlify Status](https://api.netlify.com/api/v1/badges/f7d2c417-eab4-4db0-8cce-e4821643f431/deploy-status)](https://app.netlify.com/sites/kittypay/deploys)
 
-# KittyPay - The Modern Desi Way to Split Expenses
+# KittyPay - The Modern Desi Way to Split Expenses (V1.0)
 
 <p align="center">
   <img src="public/logo.svg" alt="KittyPay" width="350"/>
@@ -22,6 +22,8 @@ Check out the live version at: [https://kittypay.netlify.app](https://kittypay.n
 - **Date Editing** - Retroactively adjust expense dates for accurate budgeting and tracking
 - **Categories with Emojis** - Visual categorization making expense tracking more intuitive
 - **Notes & Details** - Add context to expenses with detailed notes
+- **Member Management** - Edit and remove members from kitties with proper owner controls
+- **Expense Editing** - Full support for updating or deleting existing expenses
 
 ### 🧮 Financial Tools
 - **Balance Dashboard** - Visual representation of your spending patterns
@@ -29,6 +31,7 @@ Check out the live version at: [https://kittypay.netlify.app](https://kittypay.n
 - **Category Breakdown** - See where your money is going with detailed charts
 - **Top Spenders** - Identify who's contributing most to group expenses
 - **Settlement Plans** - Optimized pathways to settle all debts with minimal transactions
+- **Settlement Tracking** - Mark settlements as complete or pending with visual indicators
 
 ### 👥 Social Features
 - **Activity Timeline** - Keep track of all group activity
@@ -40,7 +43,10 @@ Check out the live version at: [https://kittypay.netlify.app](https://kittypay.n
 - **Beautiful UI** - Clean, intuitive interface with smooth animations
 - **Dark & Light Modes** - Easy on the eyes, day or night
 - **Responsive Design** - Works flawlessly on all devices from mobile to desktop
-- **PWA Support** - Install as a native app on your device (Coming Soon)
+- **Adaptive Layouts** - Optimized grid layouts for desktop with improved space utilization
+- **Visual Feedback** - Context-aware toast notifications with appropriate icons
+- **Backdrop Blur** - Modern glass-like effects for modals and overlays
+- **Hidden Scrollbars** - Clean interface with functional scrolling without visual clutter
 
 ## 🔥 Firebase Integration
 
@@ -50,7 +56,7 @@ KittyPay seamlessly integrates with Firebase to provide a robust and scalable ba
 - **Firestore Database** - Real-time data synchronization for kitties, expenses, and user profiles
 - **Security Rules** - Fine-grained access control for protecting user data
 - **Cloud Storage** - Store receipt images and profile pictures
-- **Cloud Functions** - For advanced business logic like expense notifications (coming soon)
+- **Member Management** - Firebase functions for adding, editing, and removing kitty members
 
 ## 🛠️ Tech Stack
 
@@ -175,9 +181,7 @@ This project is licensed - see the [LICENSE.MD](./LICENSE.md) file for details.
 - Inspired by the traditional Indian concept of "kitty parties"
 - Built with 💖 for friends who always argue about bills
 - Special thanks to our early testers for their valuable feedback
-- Icons provided by [React Icons](https://react-icons.github.io/react-icons/)
-- Charts powered by [Recharts](https://recharts.org/)
 
 ---
 
-<p align="center">Made with ❤️ in India</p>
+<p align="center">Crafted by <a href="https://mihirnagda.netlify.app">Mihir Nagda</a> with 💜 who believes that math should be done by computers and samosas 🥟 should be shared equally ^_^</p>

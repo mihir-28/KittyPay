@@ -6,6 +6,12 @@ import { FiPlus, FiTrash2, FiEdit2, FiDollarSign, FiUsers, FiX, FiEye } from "re
 import { createKitty, getUserKitties, addExpense, addMember } from "../firebase/kitties";
 import KittyDetails from "../components/KittyDetails";
 
+// Inline styles for cross-browser scroll hiding
+const hideScrollbarStyle = {
+  scrollbarWidth: 'none', /* Firefox */
+  msOverflowStyle: 'none'  /* IE and Edge */
+};
+
 const Kitties = () => {
   const { currentUser } = useAuth();
   const [kitties, setKitties] = useState([]);
@@ -27,6 +33,24 @@ const Kitties = () => {
   const [memberName, setMemberName] = useState("");
   const [expenseCategory, setExpenseCategory] = useState("");
   const [expenseNotes, setExpenseNotes] = useState("");
+
+  // Add style tag for WebKit browsers
+  useEffect(() => {
+    // Create style element
+    const style = document.createElement('style');
+    style.textContent = `
+      .hide-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+    `;
+    // Add style to head
+    document.head.appendChild(style);
+    
+    // Cleanup on unmount
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
 
   // Fetch kitties from Firebase
   useEffect(() => {
@@ -602,7 +626,11 @@ const Kitties = () => {
 
                 {/* Modal Body */}
                 <div className="p-4 sm:p-5">
-                  <form onSubmit={handleAddExpense} className="max-h-[60vh] overflow-y-auto px-0.5">
+                  <form 
+                    onSubmit={handleAddExpense} 
+                    className="max-h-[60vh] overflow-y-auto px-0.5 hide-scrollbar"
+                    style={hideScrollbarStyle}
+                  >
                     {/* Two-column layout for larger screens */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {/* Left column */}
@@ -732,7 +760,10 @@ const Kitties = () => {
                               </button>
                             </div>
                           </div>
-                          <div className="bg-[var(--background)] p-1.5 rounded-lg max-h-28 sm:max-h-32 overflow-y-auto mb-1 sm:mb-2 border border-[var(--border)]">
+                          <div 
+                            className="bg-[var(--background)] p-1.5 rounded-lg max-h-28 sm:max-h-32 overflow-y-auto mb-1 sm:mb-2 border border-[var(--border)] hide-scrollbar"
+                            style={hideScrollbarStyle}
+                          >
                             {currentKitty.members.map((member, idx) => (
                               <div
                                 key={member.userId || member.email || idx}

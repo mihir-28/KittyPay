@@ -581,3 +581,155 @@ export const deleteKittyExpense = async (kittyId, expenseId) => {
     return { error: error.message };
   }
 };
+
+/**
+ * Update a member in a kitty
+ * @param {string} kittyId - The kitty ID
+ * @param {string} memberId - The user ID or email of the member to update
+ * @param {Object} updatedData - The updated member data (name, email)
+ * @returns {Promise<Object>} - Result of the operation
+ */
+export const updateKittyMember = async (kittyId, memberId, updatedData) => {
+  try {
+    const kittyRef = doc(db, "kitties", kittyId);
+    const kittyDoc = await getDoc(kittyRef);
+
+    if (!kittyDoc.exists()) {
+      return { error: "Kitty not found" };
+    }
+
+    const kittyData = kittyDoc.data();
+    const members = kittyData.members || [];
+    
+    // Find the member to update (by userId or by email if userId is null)
+    const memberIndex = members.findIndex(member => 
+      (member.userId && member.userId === memberId) || 
+      (!member.userId && member.email === memberId)
+    );
+    
+    if (memberIndex === -1) {
+      return { error: "Member not found" };
+    }
+    
+    // Update member with new values
+    members[memberIndex] = {
+      ...members[memberIndex],
+      name: updatedData.name || members[memberIndex].name,
+      email: updatedData.email || members[memberIndex].email
+    };
+    
+    // Also update this member in any expense participants
+    const expenses = kittyData.expenses || [];
+    const updatedExpenses = expenses.map(expense => {
+      const participants = expense.participants || [];
+      const updatedParticipants = participants.map(participant => {
+        if ((participant.userId && participant.userId === memberId) ||
+            (!participant.userId && participant.email === memberId)) {
+          return {
+            ...participant,
+            name: updatedData.name || participant.name,
+            email: updatedData.email || participant.email
+          };
+        }
+        return participant;
+      });
+      
+      return {
+        ...expense,
+        participants: updatedParticipants,
+        // If this member is the payer, update the payer name
+        paidBy: expense.paidById === memberId ? 
+          updatedData.name || expense.paidBy : 
+          expense.paidBy
+      };
+    });
+    
+    await updateDoc(kittyRef, {
+      members: members,
+      expenses: updatedExpenses
+    });
+
+    return { success: true, member: members[memberIndex] };
+  } catch (error) {
+    console.error("Error updating member:", error);
+    return { error: error.message };
+  }
+};
+
+/**
+ * Remove a member from a kitty
+ * @param {string} kittyId - The kitty ID
+ * @param {string} memberId - The user ID or email of the member to remove
+ * @returns {Promise<Object>} - Result of the operation
+ */
+export const removeKittyMember = async (kittyId, memberId) => {
+  try {
+    const kittyRef = doc(db, "kitties", kittyId);
+    const kittyDoc = await getDoc(kittyRef);
+
+    if (!kittyDoc.exists()) {
+      return { error: "Kitty not found" };
+    }
+
+    const kittyData = kittyDoc.data();
+    const members = kittyData.members || [];
+    
+    // Find the member to remove (by userId or by email if userId is null)
+    const memberIndex = members.findIndex(member => 
+      (member.userId && member.userId === memberId) || 
+      (!member.userId && member.email === memberId)
+    );
+    
+    if (memberIndex === -1) {
+      return { error: "Member not found" };
+    }
+    
+    // Cannot remove the owner of the kitty
+    if (members[memberIndex].isOwner) {
+      return { error: "Cannot remove the owner of the kitty" };
+    }
+    
+    // Remove the member from the array
+    const updatedMembers = [
+      ...members.slice(0, memberIndex),
+      ...members.slice(memberIndex + 1)
+    ];
+    
+    // Also update any expense participants to remove this member
+    const expenses = kittyData.expenses || [];
+    const updatedExpenses = expenses.map(expense => {
+      // Skip if this member is the payer of the expense
+      if (expense.paidById === memberId) {
+        return expense;
+      }
+      
+      // Remove member from participants
+      const participants = expense.participants || [];
+      const updatedParticipants = participants.filter(participant => 
+        !((participant.userId && participant.userId === memberId) ||
+          (!participant.userId && participant.email === memberId))
+      );
+      
+      // Recalculate per person amount if participants changed
+      const perPersonAmount = updatedParticipants.length ? 
+        expense.amount / updatedParticipants.length : 
+        expense.amount;
+      
+      return {
+        ...expense,
+        participants: updatedParticipants,
+        perPersonAmount
+      };
+    });
+    
+    await updateDoc(kittyRef, {
+      members: updatedMembers,
+      expenses: updatedExpenses
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error removing member:", error);
+    return { error: error.message };
+  }
+};

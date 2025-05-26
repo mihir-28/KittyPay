@@ -627,9 +627,13 @@ const Profile = () => {
                 </motion.div>
 
                 <img
-                  src={userData.photoURL}
+                  src={userData.photoURL || null}
                   alt="Profile"
                   className="absolute inset-0 w-full h-full object-cover rounded-full p-[6px] z-10"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = 'https://via.placeholder.com/150';
+                  }}
                 />
 
                 {/* Visible edit overlay on both mobile and desktop */}
