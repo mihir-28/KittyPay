@@ -179,7 +179,7 @@ const Home = () => {
                 The Modern <span style={{ color: 'var(--primary)' }}>Desi</span> Way to Split Expenses
               </h1>
               <p className="text-xl" style={{ color: 'var(--text-secondary)' }}>
-                KittyPay makes it simple to track, split, and settle expenses with friends and family in India.
+                KittyPay makes it simple to track, split, and settle expenses with friends and family.
                 No more awkward money talks or complex calculations.
               </p>
               
