@@ -183,7 +183,7 @@ const Home = () => {
                 No more awkward money talks or complex calculations.
               </p>
               
-              <div className="flex flex-wrap justify-center md:justify-start gap-4">
+              <div className="flex-wrap justify-center md:justify-start gap-4 hidden">
                 <button
                   onClick={goToSignup}
                   className="flex items-center px-6 py-3 rounded-lg shadow-lg text-white transition-transform transform hover:scale-105 cursor-pointer"
