@@ -11,7 +11,7 @@ const Footer = () => {
       opacity: 0.9
     }}>
       <div className="container mx-auto px-4">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-4">
           {/* Logo and tagline */}
           <div className="flex flex-col items-center md:items-start">
             <Link to="/" className="flex items-center gap-2">
@@ -48,9 +48,19 @@ const Footer = () => {
           {/* Copyright */}
           <div className="flex flex-col items-center md:items-end gap-2">
             <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+              Developed by <a href="https://github.com/mihir-28" target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: 'var(--primary)' }}>Mihir Nagda</a>
+            </p>
+            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
               © {currentYear} KittyPay. All Rights Reserved.
             </p>
           </div>
+        </div>
+        
+        {/* Tagline centered below all sections */}
+        <div className="text-center mt-4 pt-4 border-t border-opacity-20" style={{ borderColor: 'var(--text-secondary)' }}>
+          <p className="text-sm italic" style={{ color: 'var(--text-secondary)' }}>
+            Because samosas are better shared — and so are expenses!
+          </p>
         </div>
       </div>
     </footer>

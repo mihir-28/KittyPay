@@ -1,3 +1,5 @@
+# Firebase Setup for KittyPay v1.0
+
 ## 🔧 Setting up Firebase
 
 To configure Firebase for development:
