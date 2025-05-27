@@ -57,6 +57,7 @@ KittyPay seamlessly integrates with Firebase to provide a robust and scalable ba
 - **Security Rules** - Fine-grained access control for protecting user data
 - **Cloud Storage** - Store receipt images and profile pictures
 - **Member Management** - Firebase functions for adding, editing, and removing kitty members
+- **Google Analytics** - Track user engagement, feature usage, and app performance
 
 ## 🛠️ Tech Stack
 
@@ -71,6 +72,7 @@ KittyPay seamlessly integrates with Firebase to provide a robust and scalable ba
 - **State Management**: React Context API & Hooks
 - **Authentication**: Firebase Auth with multiple login options
 - **Database**: Firebase Firestore
+- **Analytics**: Firebase Google Analytics
 - **Styling**: CSS Variables for theming, Tailwind for utilities
 - **Deployment**: Netlify CI/CD pipeline
 
@@ -108,10 +110,29 @@ Visit `http://localhost:5173` to see the app in action!
 1. Create a new Firebase project at [firebase.google.com](https://firebase.google.com)
 2. Enable Authentication (Email/Password and Google providers)
 3. Create a Firestore database
-4. Add your Firebase configuration to `.env`
-5. Deploy Firestore security rules (see [FIREBASE_SETUP.md](./FIREBASE_SETUP.md))
+4. Enable Google Analytics for your Firebase project
+5. Add your Firebase configuration to `.env`
+6. Deploy Firestore security rules (see [FIREBASE_SETUP.md](./FIREBASE_SETUP.md))
 
 For detailed instructions, see [FIREBASE_SETUP.md](./FIREBASE_SETUP.md).
+
+### 📊 Google Analytics Setup
+
+KittyPay uses Firebase Google Analytics to track user engagement and app performance:
+
+1. Enable Google Analytics in your Firebase project
+2. Add your Measurement ID to `.env`:
+   ```
+   VITE_FIREBASE_MEASUREMENT_ID=your-measurement-id
+   ```
+3. Key metrics tracked:
+   - User sign-up and login events
+   - Kitty creation and management
+   - Expense addition and settlements
+   - Feature usage and user flows
+   - Page views and session duration
+
+Analytics data can be viewed in the Firebase console under Analytics section.
 
 ## 📦 Build & Deployment
 

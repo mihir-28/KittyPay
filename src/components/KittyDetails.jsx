@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { getKittyById, updateKittyExpense, updateKittySettlement, deleteKittyExpense, updateKittyMember, removeKittyMember } from "../firebase/kitties";
+import { trackSettlement } from "../firebase/analytics";
 import { FiArrowLeft, FiDollarSign, FiUsers, FiEdit2, FiCheck, FiX, FiTrash2, FiUser } from "react-icons/fi";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
@@ -12,6 +13,7 @@ const KittyDetails = ({ kittyId, onBack }) => {
   const [editingMember, setEditingMember] = useState(null);
   const [settledTransactions, setSettledTransactions] = useState([]);
   const { currentUser } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const fetchKitty = async () => {
@@ -149,43 +151,43 @@ const KittyDetails = ({ kittyId, onBack }) => {
 
   const handleSettlementToggle = async (settlement, index) => {
     try {
-      const isSettled = settledTransactions.some(
-        st => st.from === settlement.from && st.to === settlement.to && st.amount === settlement.amount
-      );
+      setIsLoading(true);
       
-      let updatedSettledTransactions;
+      // Create a copy of the settlements array
+      const updatedSettlements = [...settledTransactions];
       
-      if (isSettled) {
-        // Remove from settled transactions
-        updatedSettledTransactions = settledTransactions.filter(
-          st => !(st.from === settlement.from && st.to === settlement.to && st.amount === settlement.amount)
-        );
-      } else {
-        // Add to settled transactions
-        updatedSettledTransactions = [
-          ...settledTransactions,
-          { ...settlement, settledAt: new Date() }
-        ];
+      // Toggle the selected settlement
+      updatedSettlements[index] = {
+        ...settlement,
+        settled: !settlement.settled
+      };
+      
+      // Update the settlements in Firestore
+      const { error } = await updateKittySettlement(kittyId, updatedSettlements);
+      
+      if (error) {
+        toast.error('Failed to update settlement status');
+        console.error(error);
+        setIsLoading(false);
+        return;
       }
       
-      // Update state
-      setSettledTransactions(updatedSettledTransactions);
-      
-      // Update in Firebase
-      await updateKittySettlement(kittyId, updatedSettledTransactions);
-      
-      if (isSettled) {
-        toast.success("Settlement marked as unsettled", {
-          icon: <FiX className="text-amber-500" />
-        });
-      } else {
-        toast.success("Settlement marked as settled", {
-          icon: <FiCheck className="text-green-500" />
-        });
+      // If marking as settled, track the settlement
+      if (!settlement.settled) {
+        trackSettlement(kittyId, settlement.amount);
       }
-    } catch (error) {
-      console.error("Error updating settlement status:", error);
-      toast.error("Failed to update settlement status");
+      
+      // Update local state
+      setSettledTransactions(updatedSettlements);
+      toast.success('Settlement status updated');
+      
+      // Refetch kitty to update balances
+      fetchKitty();
+    } catch (err) {
+      console.error('Error updating settlement:', err);
+      toast.error('An error occurred while updating the settlement');
+    } finally {
+      setIsLoading(false);
     }
   };
 

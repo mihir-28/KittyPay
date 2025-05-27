@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import { useAuth } from "../contexts/AuthContext";
 import { FiPlus, FiTrash2, FiEdit2, FiDollarSign, FiUsers, FiX, FiEye } from "react-icons/fi";
 import { createKitty, getUserKitties, addExpense, addMember } from "../firebase/kitties";
+import { trackKittyCreated, trackExpenseAdded, trackMemberAdded } from "../firebase/analytics";
 import KittyDetails from "../components/KittyDetails";
 
 // Inline styles for cross-browser scroll hiding
@@ -91,9 +92,12 @@ const Kitties = () => {
 
   const handleCreateKitty = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    setError('');
 
     if (!kittyName.trim()) {
-      toast.error("Please enter a kitty name");
+      setError('Kitty name is required');
+      setIsSubmitting(false);
       return;
     }
 
@@ -111,6 +115,9 @@ const Kitties = () => {
       if (result.error) {
         throw new Error(result.error.message || "Failed to create kitty");
       }
+
+      // Track kitty creation
+      trackKittyCreated(result.id, kittyName);
 
       // Create a new kitty object for the UI until we refresh
       const newKitty = {
@@ -138,24 +145,37 @@ const Kitties = () => {
       toast.error(error.message || "Failed to create kitty");
     } finally {
       toast.dismiss(loadingToast);
+      setIsSubmitting(false);
     }
   };
 
   const handleAddExpense = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    setError('');
+
     if (!expenseAmount || !expenseDescription || !expensePayer || !expenseCategory) {
-      toast.error("Please fill in all required expense details");
+      setError("Please fill in all required expense details");
+      setIsSubmitting(false);
       return;
     }
 
     if (expenseParticipants.length === 0) {
-      toast.error("Please select at least one participant");
+      setError("Please select at least one participant");
+      setIsSubmitting(false);
       return;
     }
 
     const loadingToast = toast.loading("Adding expense...");
 
     try {
+      const amount = parseFloat(expenseAmount);
+      if (isNaN(amount) || amount <= 0) {
+        setError("Amount must be a positive number");
+        setIsSubmitting(false);
+        return;
+      }
+
       // Get selected participants from the form
       const participants = expenseParticipants.map(participantId => {
         const member = currentKitty.members.find(m =>
@@ -172,7 +192,7 @@ const Kitties = () => {
 
       const result = await addExpense(currentKitty.id, {
         description: expenseDescription,
-        amount: parseFloat(expenseAmount),
+        amount: amount,
         category: expenseCategory,
         notes: expenseNotes,
         paidBy: payer.name, // Display name of who paid
@@ -183,6 +203,9 @@ const Kitties = () => {
       if (result.error) {
         throw new Error(result.error.message || "Failed to add expense");
       }
+
+      // Track expense added
+      trackExpenseAdded(currentKitty.id, amount, expenseCategory);
 
       // Update the UI with the new expense
       const updatedKitties = kitties.map(kitty => {
@@ -195,7 +218,7 @@ const Kitties = () => {
           return {
             ...kitty,
             expenses: [...kitty.expenses, newExpense],
-            totalAmount: kitty.totalAmount + parseFloat(expenseAmount)
+            totalAmount: kitty.totalAmount + amount
           };
         }
         return kitty;
@@ -215,19 +238,24 @@ const Kitties = () => {
       toast.error(error.message || "Failed to add expense");
     } finally {
       toast.dismiss(loadingToast);
+      setIsSubmitting(false);
     }
   };
 
   const handleAddMember = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    setError('');
 
     if (!memberEmail || !memberName) {
-      toast.error("Please enter both name and email");
+      setError("Please enter both name and email");
+      setIsSubmitting(false);
       return;
     }
 
     if (currentKitty.members.some(member => member.email === memberEmail)) {
-      toast.error("This member is already in the kitty");
+      setError("This member is already in the kitty");
+      setIsSubmitting(false);
       return;
     }
 
@@ -242,6 +270,9 @@ const Kitties = () => {
       if (result.error) {
         throw new Error(result.error.message || "Failed to add member");
       }
+
+      // Track member added
+      trackMemberAdded(currentKitty.id);
 
       // Update the UI with the new member
       const updatedKitties = kitties.map(kitty => {
@@ -264,6 +295,7 @@ const Kitties = () => {
       toast.error(error.message || "Failed to add member");
     } finally {
       toast.dismiss(loadingToast);
+      setIsSubmitting(false);
     }
   };
 

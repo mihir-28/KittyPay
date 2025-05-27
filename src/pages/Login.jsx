@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { FaLock, FaEye, FaEyeSlash, FaAt, FaGithub, FaEnvelope, FaArrowRight } from 'react-icons/fa';
 import { signInWithEmail, signInWithGoogle, sendSignInLink } from '../firebase/auth';
 import { toast } from 'react-hot-toast';
+import { trackUserLogin } from "../firebase/analytics";
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -31,13 +32,17 @@ const Login = () => {
     setIsLoading(true);
     setError('');
 
-    try {      const { user, error } = await signInWithEmail(formData.email, formData.password);
-        if (error) {
+    try {      
+      const { user, error } = await signInWithEmail(formData.email, formData.password);
+      if (error) {
         setError(error.message || 'Failed to sign in');
         toast.error(error.message || 'Failed to sign in');
         setIsLoading(false);
         return;
       }
+      
+      // Track login event
+      trackUserLogin('email');
       
       // Success - navigate to profile
       toast.success('Login successful! Welcome back!');
@@ -52,7 +57,8 @@ const Login = () => {
     setIsLoading(true);
     setError('');
 
-    try {      const { user, error } = await signInWithGoogle();
+    try {      
+      const { user, error } = await signInWithGoogle();
       
       if (error) {
         setError(error.message || 'Failed to sign in with Google');
@@ -60,7 +66,11 @@ const Login = () => {
         setIsLoading(false);
         return;
       }
-        // Success - navigate to profile
+      
+      // Track login event
+      trackUserLogin('google');
+        
+      // Success - navigate to profile
       toast.success('Login successful! Welcome back!');
       navigate('/profile');
     } catch (err) {
@@ -87,6 +97,9 @@ const Login = () => {
         setIsLoading(false);
         return;
       }
+      
+      // Track magic link request
+      trackUserLogin('magic_link_request');
       
       // Show success message
       toast.success('Magic link sent! Check your email.');

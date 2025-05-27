@@ -1,6 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
+import { getAnalytics, logEvent } from "firebase/analytics";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -24,4 +25,20 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-export { app, auth, db, appConfig };
+// Determine if we're in production based on hostname
+const isProduction = typeof window !== 'undefined' && 
+  !window.location.hostname.includes('localhost') && 
+  !window.location.hostname.includes('127.0.0.1');
+
+// Initialize Analytics only in production environment or if explicitly enabled
+const analyticsEnabled = isProduction || import.meta.env.VITE_ENABLE_ANALYTICS === 'true';
+const analytics = typeof window !== 'undefined' && analyticsEnabled ? getAnalytics(app) : null;
+
+// Helper function to log events only when analytics is enabled
+const logAnalyticsEvent = (eventName, eventParams = {}) => {
+  if (analytics) {
+    logEvent(analytics, eventName, eventParams);
+  }
+};
+
+export { app, auth, db, analytics, logAnalyticsEvent, appConfig };

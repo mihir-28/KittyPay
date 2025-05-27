@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FaAt, FaLock, FaEye, FaEyeSlash, FaUser, FaGoogle, FaEnvelope, FaArrowRight } from 'react-icons/fa';
 import { signUpWithEmail, signInWithGoogle, sendSignInLink } from '../firebase/auth';
+import { trackUserSignup } from '../firebase/analytics';
 import { toast } from 'react-hot-toast';
 
 const Signup = () => {
@@ -50,6 +51,9 @@ const Signup = () => {
         return;
       }
       
+      // Track signup event
+      trackUserSignup('email');
+      
       // Success - navigate to profile
       toast.success('Account created successfully! Welcome to KittyPay!');
       navigate('/profile');
@@ -71,6 +75,9 @@ const Signup = () => {
         setIsLoading(false);
         return;
       }
+      
+      // Track signup event
+      trackUserSignup('google');
       
       // Success - navigate to profile
       toast.success('Account created successfully! Welcome to KittyPay!');
@@ -99,6 +106,9 @@ const Signup = () => {
         setIsLoading(false);
         return;
       }
+      
+      // Track magic link request
+      trackUserSignup('magic_link_request');
       
       // Show success message
       setMagicLinkSent(true);
