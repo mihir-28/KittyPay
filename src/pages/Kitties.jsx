@@ -22,6 +22,9 @@ const Kitties = () => {
   const [showMemberModal, setShowMemberModal] = useState(false);
   const [currentKitty, setCurrentKitty] = useState(null);
   const [selectedKittyId, setSelectedKittyId] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  
   // Form states
   const [kittyName, setKittyName] = useState("");
   const [kittyDescription, setKittyDescription] = useState("");
@@ -310,6 +313,7 @@ const Kitties = () => {
     setExpensePayer(currentUser.uid);
     setExpenseCategory("");
     setExpenseNotes("");
+    setError('');
     setShowExpenseModal(true);
   };
 
@@ -317,6 +321,7 @@ const Kitties = () => {
     setCurrentKitty(kitty);
     setMemberEmail("");
     setMemberName("");
+    setError('');
     setShowMemberModal(true);
   };
 
@@ -397,7 +402,10 @@ const Kitties = () => {
           <div className="flex justify-between items-center mb-8">
             <h1 className="text-3xl font-bold">Your Kitties</h1>
             <button
-              onClick={() => setShowCreateModal(true)}
+              onClick={() => {
+                setShowCreateModal(true);
+                setError('');
+              }}
               className="bg-[var(--primary)] hover:opacity-90 text-white py-2 px-4 rounded-lg flex items-center gap-2"
             >
               <FiPlus /> New Kitty
@@ -413,7 +421,10 @@ const Kitties = () => {
               <h3 className="text-2xl mb-4">No kitties yet</h3>
               <p className="mb-6 text-[var(--text-secondary)]">Create your first kitty to start tracking shared expenses</p>
               <button
-                onClick={() => setShowCreateModal(true)}
+                onClick={() => {
+                  setShowCreateModal(true);
+                  setError('');
+                }}
                 className="bg-[var(--primary)] hover:opacity-90 text-white py-2 px-6 rounded-lg flex items-center gap-2 mx-auto"
               >
                 <FiPlus /> Create Kitty
@@ -555,12 +566,24 @@ const Kitties = () => {
               >
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-xl font-bold">Create New Kitty</h2>
-                  <button onClick={() => setShowCreateModal(false)} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
+                  <button
+                    onClick={() => {
+                      setShowCreateModal(false);
+                      setError('');
+                    }}
+                    className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                  >
                     <FiX size={24} />
                   </button>
                 </div>
 
                 <form onSubmit={handleCreateKitty}>
+                  {error && (
+                    <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">
+                      {error}
+                    </div>
+                  )}
+                  
                   <div className="mb-4">
                     <label htmlFor="kittyName" className="block mb-2 text-sm font-medium">
                       Kitty Name*
@@ -613,7 +636,10 @@ const Kitties = () => {
                   <div className="flex gap-3 justify-end">
                     <button
                       type="button"
-                      onClick={() => setShowCreateModal(false)}
+                      onClick={() => {
+                        setShowCreateModal(false);
+                        setError('');
+                      }}
                       className="px-4 py-2 border border-[var(--border)] rounded-lg hover:bg-[var(--background)]"
                     >
                       Cancel
@@ -643,6 +669,7 @@ const Kitties = () => {
                   <button
                     onClick={() => {
                       setShowExpenseModal(false);
+                      setError('');
                       setExpenseAmount("");
                       setExpenseDescription("");
                       setExpenseCategory("");
@@ -663,6 +690,12 @@ const Kitties = () => {
                     className="max-h-[60vh] overflow-y-auto px-0.5 hide-scrollbar"
                     style={hideScrollbarStyle}
                   >
+                    {error && (
+                      <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">
+                        {error}
+                      </div>
+                    )}
+                    
                     {/* Two-column layout for larger screens */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {/* Left column */}
@@ -830,6 +863,7 @@ const Kitties = () => {
                         type="button"
                         onClick={() => {
                           setShowExpenseModal(false);
+                          setError('');
                           setExpenseAmount("");
                           setExpenseDescription("");
                           setExpenseCategory("");
@@ -863,12 +897,24 @@ const Kitties = () => {
               >
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-xl font-bold">Add Member to {currentKitty.name}</h2>
-                  <button onClick={() => setShowMemberModal(false)} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
+                  <button
+                    onClick={() => {
+                      setShowMemberModal(false);
+                      setError('');
+                    }}
+                    className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                  >
                     <FiX size={24} />
                   </button>
                 </div>
 
                 <form onSubmit={handleAddMember}>
+                  {error && (
+                    <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">
+                      {error}
+                    </div>
+                  )}
+                  
                   <div className="mb-4">
                     <label htmlFor="memberName" className="block mb-2 text-sm font-medium">
                       Name*
@@ -905,7 +951,10 @@ const Kitties = () => {
                   <div className="flex gap-3 justify-end">
                     <button
                       type="button"
-                      onClick={() => setShowMemberModal(false)}
+                      onClick={() => {
+                        setShowMemberModal(false);
+                        setError('');
+                      }}
                       className="px-4 py-2 border border-[var(--border)] rounded-lg hover:bg-[var(--background)]"
                     >
                       Cancel

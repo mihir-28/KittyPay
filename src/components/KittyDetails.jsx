@@ -2,9 +2,77 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { getKittyById, updateKittyExpense, updateKittySettlement, deleteKittyExpense, updateKittyMember, removeKittyMember } from "../firebase/kitties";
 import { trackSettlement } from "../firebase/analytics";
-import { FiArrowLeft, FiDollarSign, FiUsers, FiEdit2, FiCheck, FiX, FiTrash2, FiUser } from "react-icons/fi";
+import { FiArrowLeft, FiDollarSign, FiUsers, FiEdit2, FiCheck, FiX, FiTrash2, FiUser, FiAlertTriangle } from "react-icons/fi";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
+
+// Custom confirmation alert component
+const ConfirmationAlert = ({ isOpen, onClose, onConfirm, title, message, confirmText = "Delete", cancelText = "Cancel", type = "danger" }) => {
+  if (!isOpen) return null;
+  
+  const getTypeStyles = () => {
+    switch (type) {
+      case 'danger':
+        return {
+          icon: <FiAlertTriangle size={24} className="text-red-500" />,
+          confirmButtonClass: "bg-red-500 hover:bg-red-600 text-white",
+          confirmTextColor: "text-red-600"
+        };
+      case 'warning':
+        return {
+          icon: <FiAlertTriangle size={24} className="text-amber-500" />,
+          confirmButtonClass: "bg-amber-500 hover:bg-amber-600 text-white",
+          confirmTextColor: "text-amber-600"
+        };
+      default:
+        return {
+          icon: <FiAlertTriangle size={24} className="text-blue-500" />,
+          confirmButtonClass: "bg-blue-500 hover:bg-blue-600 text-white",
+          confirmTextColor: "text-blue-600"
+        };
+    }
+  };
+  
+  const typeStyles = getTypeStyles();
+  
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.9 }}
+        className="bg-[var(--surface)] rounded-xl shadow-lg max-w-md w-full overflow-hidden"
+      >
+        <div className="p-5 sm:p-6">
+          <div className="flex items-center mb-4">
+            {typeStyles.icon}
+            <h3 className="text-xl font-bold ml-3">{title}</h3>
+          </div>
+          
+          <p className="mb-6 text-[var(--text-secondary)]">{message}</p>
+          
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 border border-[var(--border)] rounded-lg hover:bg-[var(--background)]"
+            >
+              {cancelText}
+            </button>
+            <button
+              onClick={() => {
+                onConfirm();
+                onClose();
+              }}
+              className={`px-4 py-2 rounded-lg ${typeStyles.confirmButtonClass}`}
+            >
+              {confirmText}
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
 
 const KittyDetails = ({ kittyId, onBack }) => {
   const [kitty, setKitty] = useState(null);
@@ -14,6 +82,27 @@ const KittyDetails = ({ kittyId, onBack }) => {
   const [settledTransactions, setSettledTransactions] = useState([]);
   const { currentUser } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [confirmationData, setConfirmationData] = useState({
+    title: '',
+    message: '',
+    onConfirm: () => {},
+    type: 'danger'
+  });
+
+  // Add event listener for custom confirmation events
+  useEffect(() => {
+    const handleShowConfirmation = (e) => {
+      setConfirmationData(e.detail);
+      setShowConfirmation(true);
+    };
+
+    document.addEventListener('SHOW_DELETE_CONFIRMATION', handleShowConfirmation);
+    
+    return () => {
+      document.removeEventListener('SHOW_DELETE_CONFIRMATION', handleShowConfirmation);
+    };
+  }, []);
 
   useEffect(() => {
     const fetchKitty = async () => {
@@ -57,6 +146,7 @@ const KittyDetails = ({ kittyId, onBack }) => {
       fetchKitty();
     }
   }, [kittyId, currentUser, onBack]);
+
   // Calculate what each person owes
   const calculateBalances = () => {
     if (!kitty || !kitty.members || !kitty.expenses) return [];
@@ -103,6 +193,7 @@ const KittyDetails = ({ kittyId, onBack }) => {
 
     return memberBalances;
   };
+
   const balances = kitty ? calculateBalances() : [];
   // Function to calculate settlement plan (minimum number of transactions)
   const calculateSettlements = () => {
@@ -152,35 +243,35 @@ const KittyDetails = ({ kittyId, onBack }) => {
   const handleSettlementToggle = async (settlement, index) => {
     try {
       setIsLoading(true);
-      
+
       // Create a copy of the settlements array
       const updatedSettlements = [...settledTransactions];
-      
+
       // Toggle the selected settlement
       updatedSettlements[index] = {
         ...settlement,
         settled: !settlement.settled
       };
-      
+
       // Update the settlements in Firestore
       const { error } = await updateKittySettlement(kittyId, updatedSettlements);
-      
+
       if (error) {
         toast.error('Failed to update settlement status');
         console.error(error);
         setIsLoading(false);
         return;
       }
-      
+
       // If marking as settled, track the settlement
       if (!settlement.settled) {
         trackSettlement(kittyId, settlement.amount);
       }
-      
+
       // Update local state
       setSettledTransactions(updatedSettlements);
       toast.success('Settlement status updated');
-      
+
       // Refetch kitty to update balances
       fetchKitty();
     } catch (err) {
@@ -315,56 +406,56 @@ const KittyDetails = ({ kittyId, onBack }) => {
   const handleDeleteMember = async (member) => {
     try {
       const memberId = member.userId || member.email;
-      
+
       // Cannot delete the owner
       if (member.isOwner) {
         toast.error("Cannot remove the owner of the kitty");
         return;
       }
-      
+
       // Cannot delete yourself (for security)
       if (member.userId === currentUser.uid) {
         toast.error("You cannot remove yourself. Leave the kitty instead.");
         return;
       }
-      
+
       const result = await removeKittyMember(kittyId, memberId);
-      
+
       if (result.error) {
         throw new Error(result.error);
       }
-      
+
       // Update local state - remove the member
       const updatedMembers = kitty.members.filter(m => {
         const mId = m.userId || m.email;
         return mId !== memberId;
       });
-      
+
       // Update expenses to reflect member removal
       const updatedExpenses = kitty.expenses.map(expense => {
         // Skip if this member is the payer of the expense
         if (expense.paidById === memberId) {
           return expense;
         }
-        
+
         // Remove member from participants
         const updatedParticipants = expense.participants?.filter(participant => {
           const participantId = participant.userId || participant.email;
           return participantId !== memberId;
         }) || [];
-        
+
         return {
           ...expense,
           participants: updatedParticipants
         };
       });
-      
+
       setKitty({
         ...kitty,
         members: updatedMembers,
         expenses: updatedExpenses
       });
-      
+
       setEditingMember(null);
       toast.success("Member removed successfully");
     } catch (error) {
@@ -400,8 +491,8 @@ const KittyDetails = ({ kittyId, onBack }) => {
             <div className="mt-4 md:mt-0 flex items-center">
               <div className="flex -space-x-2 mr-4">
                 {kitty.members.slice(0, 3).map((member, idx) => (
-                  <div 
-                    key={member.userId || idx} 
+                  <div
+                    key={member.userId || idx}
                     className="w-10 h-10 rounded-full bg-[var(--primary)] flex items-center justify-center text-white border-2 border-[var(--surface)]"
                     title={member.name}
                   >
@@ -459,16 +550,15 @@ const KittyDetails = ({ kittyId, onBack }) => {
             <h2 className="text-lg font-semibold mb-3 flex items-center">
               <FiDollarSign className="mr-2" /> Balances
             </h2>
-            
+
             {/* Your balance highlighted card - only visible for your own balance */}
             {balances.filter(b => b.name === "You").map((balance, idx) => (
               <div
                 key={idx}
-                className={`p-4 mb-4 rounded-lg ${
-                  balance.owes > 0 ? 'bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800/30' :
-                  balance.owes < 0 ? 'bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800/30' :
-                  'bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800/30'
-                }`}
+                className={`p-4 mb-4 rounded-lg ${balance.owes > 0 ? 'bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800/30' :
+                    balance.owes < 0 ? 'bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800/30' :
+                      'bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800/30'
+                  }`}
               >
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center">
@@ -511,7 +601,7 @@ const KittyDetails = ({ kittyId, onBack }) => {
                 </div>
               </div>
             ))}
-            
+
             {/* Other members balances */}
             <div className="bg-[var(--background)] p-3 rounded-lg">
               <ul className="divide-y divide-[var(--border)]">
@@ -524,7 +614,7 @@ const KittyDetails = ({ kittyId, onBack }) => {
                         </div>
                         <span className="ml-2 font-medium">{balance.name}</span>
                       </div>
-                      
+
                       {balance.owes > 0 ? (
                         <span className="text-sm text-red-600 dark:text-red-400 font-semibold">
                           Owes {kitty.currency || '$'}{balance.owes.toFixed(2)}
@@ -539,7 +629,7 @@ const KittyDetails = ({ kittyId, onBack }) => {
                         </span>
                       )}
                     </div>
-                    
+
                     <div className="grid grid-cols-2 gap-2 text-xs text-[var(--text-secondary)]">
                       <div>Paid: {kitty.currency || '$'}{balance.paid.toFixed(2)}</div>
                       <div>Share: {kitty.currency || '$'}{balance.shouldPay.toFixed(2)}</div>
@@ -706,7 +796,7 @@ const KittyDetails = ({ kittyId, onBack }) => {
                 No expenses yet
               </p>
             )}
-          </div>          
+          </div>
 
           {/* Net Settlement Plan section */}
           <div className="bg-[var(--surface)] p-4 rounded-xl shadow-sm border border-[var(--border)]">
@@ -721,14 +811,14 @@ const KittyDetails = ({ kittyId, onBack }) => {
                   const isSettled = settledTransactions.some(
                     st => st.from === settlement.from && st.to === settlement.to && st.amount === settlement.amount
                   );
-                  
+
                   return (
                     <div
                       key={idx}
                       className={`flex flex-col sm:flex-row justify-between items-center p-3 rounded-md ${isSettled
-                        ? 'bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-900/30' 
+                        ? 'bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-900/30'
                         : 'bg-[var(--surface)] border border-[var(--border)]'
-                      } shadow-sm`}
+                        } shadow-sm`}
                     >
                       {/* Mobile layout (stacked) */}
                       <div className="flex w-full justify-between items-center sm:hidden">
@@ -752,7 +842,7 @@ const KittyDetails = ({ kittyId, onBack }) => {
                           className={`px-3 py-1 rounded-full text-xs font-medium ${isSettled
                             ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
                             : 'bg-[var(--background)] text-[var(--text-secondary)]'
-                          }`}
+                            }`}
                         >
                           {isSettled ? 'Settled' : 'Mark settled'}
                         </button>
@@ -786,7 +876,7 @@ const KittyDetails = ({ kittyId, onBack }) => {
                         className={`hidden sm:flex items-center px-3 py-1.5 rounded-full text-sm font-medium ${isSettled
                           ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
                           : 'bg-[var(--background)] text-[var(--text-secondary)] hover:bg-[var(--border)]'
-                        }`}
+                          }`}
                       >
                         {isSettled ? (
                           <>
@@ -808,7 +898,7 @@ const KittyDetails = ({ kittyId, onBack }) => {
                   <p className="text-sm mt-1 text-[var(--text-secondary)]">All balances are even.</p>
                 </div>
               )}
-              
+
               <p className="mt-4 text-xs text-[var(--text-secondary)]">
                 This plan minimizes the total number of transactions needed to settle all balances in the kitty.
                 Mark transactions as settled once they've been completed.
@@ -817,7 +907,7 @@ const KittyDetails = ({ kittyId, onBack }) => {
           </div>
         </div>
       </div>
-      
+
       {/* Edit Expense Modal */}
       {editingExpense && (
         <ExpenseEditForm
@@ -840,6 +930,16 @@ const KittyDetails = ({ kittyId, onBack }) => {
           currentUser={currentUser}
         />
       )}
+
+      {/* Confirmation Alert */}
+      <ConfirmationAlert
+        isOpen={showConfirmation}
+        onClose={() => setShowConfirmation(false)}
+        onConfirm={confirmationData.onConfirm}
+        title={confirmationData.title}
+        message={confirmationData.message}
+        type={confirmationData.type}
+      />
     </div>
   );
 };
@@ -951,9 +1051,15 @@ const ExpenseEditForm = ({ expense, onSave, onCancel, onDelete, kitty }) => {
   };
 
   const handleDeleteConfirm = () => {
-    if (window.confirm("Are you sure you want to delete this expense? This action cannot be undone.")) {
-      onDelete(expense);
-    }
+    // Show custom confirmation instead of window.confirm
+    document.dispatchEvent(new CustomEvent('SHOW_DELETE_CONFIRMATION', {
+      detail: {
+        title: "Delete Expense?",
+        message: `Are you sure you want to delete the expense "${expense.description}" of ${kitty.currency || '$'}${expense.amount.toFixed(2)}? This action cannot be undone.`,
+        onConfirm: () => onDelete(expense),
+        type: 'danger'
+      }
+    }));
   };
 
   return (
@@ -1226,9 +1332,15 @@ const MemberEditForm = ({ member, onSave, onCancel, onDelete, kitty, currentUser
   };
 
   const handleDeleteConfirm = () => {
-    if (window.confirm(`Are you sure you want to remove ${member.name} from this kitty? This cannot be undone.`)) {
-      onDelete(member);
-    }
+    // Show custom confirmation instead of window.confirm
+    document.dispatchEvent(new CustomEvent('SHOW_DELETE_CONFIRMATION', {
+      detail: {
+        title: `Remove ${member.name}?`,
+        message: `Are you sure you want to remove ${member.name} from this kitty? Their expenses will remain, but they won't be part of future expenses. This action cannot be undone.`,
+        onConfirm: () => onDelete(member),
+        type: 'danger'
+      }
+    }));
   };
 
   const isCurrentUser = member.userId === currentUser.uid;
@@ -1329,7 +1441,7 @@ const MemberEditForm = ({ member, onSave, onCancel, onDelete, kitty, currentUser
               {(isOwner || isCurrentUser) && (
                 <div></div> // Empty div to maintain spacing when delete button is hidden
               )}
-              
+
               <div className="flex gap-3">
                 <button
                   type="button"
