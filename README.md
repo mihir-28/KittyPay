@@ -1,6 +1,6 @@
 [![Netlify Status](https://api.netlify.com/api/v1/badges/f7d2c417-eab4-4db0-8cce-e4821643f431/deploy-status)](https://app.netlify.com/sites/kittypay/deploys)
 
-# KittyPay - The Modern Desi Way to Split Expenses (V1.0)
+# KittyPay - The Modern Desi Way to Split Expenses (V1.7)
 
 <p align="center">
   <img src="public/logo.svg" alt="KittyPay" width="350"/>

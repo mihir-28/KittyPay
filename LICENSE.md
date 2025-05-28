@@ -1,5 +1,5 @@
 # KittyPay Software License Agreement
-Version 1.0, May 15, 2025
+Version 1.7, May 29, 2025
 
 ## 1. Definitions
 - "Software" refers to KittyPay software and all associated documentation files.
