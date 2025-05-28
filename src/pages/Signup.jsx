@@ -311,14 +311,20 @@ const Signup = () => {
                         placeholder="Create a strong password"
                       />
                       <button
+                        id="toggle-password"
                         type="button"
                         className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                        onClick={() => setShowPassword(!showPassword)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowPassword(!showPassword);
+                        }}
                         onTouchEnd={(e) => {
                           e.preventDefault();
+                          e.stopPropagation();
                           setShowPassword(!showPassword);
                         }}
                         aria-label={showPassword ? "Hide password" : "Show password"}
+                        tabIndex="-1"
                       >
                         {showPassword ?
                           <FaEyeSlash size={18} style={{ color: 'var(--text-secondary)' }} /> :
@@ -354,14 +360,20 @@ const Signup = () => {
                         placeholder="Confirm your password"
                       />
                       <button
+                        id="toggle-confirm-password"
                         type="button"
                         className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowConfirmPassword(!showConfirmPassword);
+                        }}
                         onTouchEnd={(e) => {
                           e.preventDefault();
+                          e.stopPropagation();
                           setShowConfirmPassword(!showConfirmPassword);
                         }}
                         aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                        tabIndex="-1"
                       >
                         {showConfirmPassword ?
                           <FaEyeSlash size={18} style={{ color: 'var(--text-secondary)' }} /> :
