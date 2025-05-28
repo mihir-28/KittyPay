@@ -82,6 +82,7 @@ const PWAInstallPrompt = () => {
       // Prevent Chrome from automatically showing the prompt
       e.preventDefault()
       // Stash the event so it can be triggered later
+      console.log('🔧 beforeinstallprompt event fired!')
       setInstallPrompt(e)
       
       if (!isInstalledOrDismissed && !isMobileDevice) {
@@ -99,11 +100,13 @@ const PWAInstallPrompt = () => {
     
     // Check if app is already installed
     const handleAppInstalled = () => {
+      console.log('🎉 App was installed!')
       markAsInstalled()
     }
     
     // Check if app is running in standalone mode (already installed)
     if (isPWAInstalled()) {
+      console.log('📱 App already in standalone mode')
       markAsInstalled()
     }
 
@@ -124,15 +127,42 @@ const PWAInstallPrompt = () => {
     markAsDismissed()
   }
 
+  // Helper function to show manual installation instructions
+  const showManualInstructions = () => {
+    // Detect device type for better instructions
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const isAndroid = /Android/.test(navigator.userAgent);
+    
+    let instructions = "To install this app on your device:\n\n";
+    
+    if (isIOS) {
+      instructions += "• Tap the Share icon (rectangle with arrow) at the bottom of the screen\n" +
+                     "• Scroll down and select 'Add to Home Screen'\n" +
+                     "• Tap 'Add' in the top right corner";
+    } else if (isAndroid) {
+      instructions += "• Tap the menu icon (three dots) in the top right corner\n" +
+                     "• Select 'Install app' or 'Add to Home Screen'\n" +
+                     "• Follow the on-screen instructions to complete installation";
+    } else {
+      instructions += "• In Chrome: Click the menu (three dots) in the top right corner and select 'Install KittyPay'\n" +
+                     "• In Edge: Click the menu (three dots) in the top right corner and select 'Apps > Install KittyPay'\n" +
+                     "• In Firefox or Safari: Add to home screen by using the share menu";
+    }
+    
+    alert(instructions);
+  }
+
   const installApp = async () => {
     if (installPrompt) {
       // Desktop install via the beforeinstallprompt event
       try {
+        console.log('🔄 Triggering browser install prompt...');
         // Show the install prompt
         installPrompt.prompt()
         
         // Wait for the user to respond to the prompt
         const { outcome } = await installPrompt.userChoice
+        console.log(`👤 User choice: ${outcome}`);
         
         // We've used the prompt, and can't use it again, discard it
         setInstallPrompt(null)
@@ -141,22 +171,20 @@ const PWAInstallPrompt = () => {
         setShowDesktopPrompt(false)
         
         if (outcome === 'accepted') {
+          console.log('✅ Installation accepted');
           markAsInstalled()
         } else {
+          console.log('❌ Installation rejected by user');
           markAsDismissed()
         }
-        
-        console.log(`User ${outcome} the install prompt`)
       } catch (error) {
-        console.error('Error showing install prompt:', error)
+        console.error('⚠️ Error showing install prompt:', error)
+        showManualInstructions();
       }
     } else if (isMobile) {
-      // For mobile, display installation instructions
-      alert("To install this app on your home screen:\n\n" +
-        "• On iOS: tap the Share icon (rectangle with arrow) and select 'Add to Home Screen'\n\n" +
-        "• On Android: tap the menu (three dots) and select 'Add to Home Screen' or 'Install App'")
-      
-      markAsDismissed()
+      // For mobile, display installation instructions based on platform
+      console.log('ℹ️ No native install prompt available, showing manual instructions');
+      showManualInstructions();
     }
   }
   

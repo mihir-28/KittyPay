@@ -147,6 +147,70 @@ const Home = () => {
     navigate('/signup');
   };
 
+  const handleInstallPWA = () => {
+    // Try to trigger any stored beforeinstallprompt event
+    const event = window.deferredPrompt;
+    if (event) {
+      // Show the install prompt
+      event.prompt();
+      
+      // Wait for the user to respond to the prompt
+      event.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === 'accepted') {
+          console.log('User accepted the install prompt');
+        } else {
+          console.log('User dismissed the install prompt');
+        }
+        // Clear the saved prompt
+        window.deferredPrompt = null;
+      });
+    } else {
+      // If no install prompt is available, show manual installation instructions
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+      const isAndroid = /Android/.test(navigator.userAgent);
+      
+      let instructions = "To install this app on your device:\n\n";
+      
+      if (isIOS) {
+        instructions += "• Tap the Share icon (rectangle with arrow) at the bottom of the screen\n" +
+                       "• Scroll down and select 'Add to Home Screen'\n" +
+                       "• Tap 'Add' in the top right corner";
+      } else if (isAndroid) {
+        instructions += "• Tap the menu icon (three dots) in the top right corner\n" +
+                       "• Select 'Install app' or 'Add to Home Screen'\n" +
+                       "• Follow the on-screen instructions to complete installation";
+      } else {
+        instructions += "• In Chrome: Click the menu (three dots) in the top right corner and select 'Install KittyPay'\n" +
+                       "• In Edge: Click the menu (three dots) in the top right corner and select 'Apps > Install KittyPay'\n" +
+                       "• In Firefox or Safari: Add to home screen by using the share menu";
+      }
+      
+      alert(instructions);
+    }
+  };
+
+  // Add effect to capture beforeinstallprompt event
+  useEffect(() => {
+    // Create a global variable to store the beforeinstallprompt event
+    window.deferredPrompt = null;
+    
+    const handleBeforeInstallPrompt = (e) => {
+      // Prevent the mini-infobar from appearing on mobile
+      e.preventDefault();
+      // Store the event for later use
+      console.log('beforeinstallprompt event captured in Home component');
+      window.deferredPrompt = e;
+    };
+
+    // Add the event listener
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      // Clean up the event listener
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
   return (
     <div>
       {/* Add the animation styles */}
@@ -537,32 +601,32 @@ const Home = () => {
           <div className="bg-gradient-to-r from-[var(--primary)] to-[#8a4fff] rounded-2xl p-8 md:p-12 shadow-xl">
             <div className="grid md:grid-cols-2 gap-8 items-center">
               <div className="text-white">
-                <h2 className="text-3xl md:text-4xl font-bold mb-4">PWA Coming Soon</h2>
+                <h2 className="text-3xl md:text-4xl font-bold mb-4">Install KittyPay App</h2>
                 <p className="text-lg mb-6 opacity-90">
-                  We're developing a Progressive Web App (PWA) that you can install directly on your device. Enjoy the same great experience with home screen access and app-like convenience!
+                  KittyPay is now available as a Progressive Web App (PWA)! Install it directly on your device for home screen access, offline capabilities, and a faster experience.
                 </p>
                 <div className="flex flex-row flex-wrap w-full gap-4">
                   <div className="flex-1 min-w-[140px]">
                     <button 
-                      onClick={goToSignup}
+                      onClick={handleInstallPWA}
                       className="w-full h-full bg-white text-[var(--primary)] px-4 py-3 rounded-lg flex items-center justify-center hover:opacity-90 transition-opacity cursor-pointer"
                     >
-                      <FaUsers size={20} className="mr-2 flex-shrink-0" />
+                      <FaDownload size={20} className="mr-2 flex-shrink-0" />
                       <div className="text-left">
-                        <div className="text-xs">Join our</div>
-                        <div className="text-sm font-semibold">Beta Program</div>
+                        <div className="text-xs">Get the</div>
+                        <div className="text-sm font-semibold">App Now</div>
                       </div>
                     </button>
                   </div>
                   <div className="flex-1 min-w-[140px]">
                     <button
                       className="w-full h-full bg-black/30 backdrop-blur-sm text-white border border-white/30 px-4 py-3 rounded-lg flex items-center justify-center hover:bg-black/40 transition-all cursor-pointer"
-                      onClick={handleNotifyClick}
+                      onClick={goToSignup}
                     >
-                      <FaDownload size={20} className="mr-2 flex-shrink-0" />
+                      <FaUsers size={20} className="mr-2 flex-shrink-0" />
                       <div className="text-left">
-                        <div className="text-xs">Get notified at</div>
-                        <div className="text-sm font-semibold">Launch</div>
+                        <div className="text-xs">Join our</div>
+                        <div className="text-sm font-semibold">Community</div>
                       </div>
                     </button>
                   </div>
@@ -575,7 +639,7 @@ const Home = () => {
                     <div className="text-white text-5xl mb-4">📱</div>
                     <h3 className="text-white text-xl font-bold mb-3">Install on Device</h3>
                     <div className="inline-block px-4 py-2 bg-white/20 rounded-full text-white font-medium">
-                      Coming Soon
+                      Available Now
                     </div>
                   </div>
                 </div>
