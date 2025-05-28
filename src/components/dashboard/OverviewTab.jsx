@@ -54,9 +54,7 @@ const OverviewTab = ({
     const x = cx + radius * Math.cos(-midAngle * Math.PI / 180);
     const y = cy + radius * Math.sin(-midAngle * Math.PI / 180);
     
-    // Only show label if the slice is big enough (more than 5%)
-    if (percent < 0.05) return null;
-    
+    // Show all labels regardless of size
     return (
       <g>
         {/* The slice */}
@@ -275,7 +273,7 @@ const OverviewTab = ({
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
                   <Pie
-                    data={processedCategoryData}
+                    data={categoryData}
                     cx="50%"
                     cy="50%"
                     innerRadius={45}
@@ -284,9 +282,9 @@ const OverviewTab = ({
                     dataKey="value"
                     labelLine={false}
                     activeShape={renderActiveShape}
-                    activeIndex={processedCategoryData.map((_, i) => i)} // Make all slices active to show all labels
+                    activeIndex={categoryData.map((_, i) => i)} // Make all slices active to show all labels
                   >
-                    {processedCategoryData.map((entry, index) => (
+                    {categoryData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
@@ -331,7 +329,7 @@ const OverviewTab = ({
             <div className="mt-4">
               <h3 className="font-semibold mb-2 text-sm">Top Categories</h3>
               <div className="space-y-2">
-                {processedCategoryData.slice(0, 3).map((category, idx) => (
+                {categoryData.slice(0, 5).map((category, idx) => (
                   <div key={idx} className="flex items-center justify-between">
                     <div className="flex items-center">
                       <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: COLORS[idx % COLORS.length] }}></div>
@@ -340,7 +338,7 @@ const OverviewTab = ({
                     <span className="text-sm font-medium">₹{category.value.toFixed(2)}</span>
                   </div>
                 ))}
-                {categoryData.length > 3 && (
+                {categoryData.length > 5 && (
                   <div className="text-center">
                     <button 
                       onClick={() => setActiveTab('expenses')} 
