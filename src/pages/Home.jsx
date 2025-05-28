@@ -5,6 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { useAuth } from '../contexts/AuthContext';
 
 // Add modal animation keyframes
 const modalAnimation = `
@@ -27,6 +28,7 @@ const Home = () => {
   const modalRef = useRef(null);
   const howItWorksRef = useRef(null);
   const navigate = useNavigate();
+  const { currentUser, isAuthenticated } = useAuth();
 
   const toggleFaq = (index) => {
     if (openFaqIndex === index) {
@@ -147,6 +149,14 @@ const Home = () => {
     navigate('/signup');
   };
 
+  const handleKittyButtonClick = () => {
+    if (isAuthenticated) {
+      navigate('/kitties');
+    } else {
+      navigate('/signup');
+    }
+  };
+
   const handleInstallPWA = () => {
     // Try to trigger any stored beforeinstallprompt event
     const event = window.deferredPrompt;
@@ -210,6 +220,16 @@ const Home = () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     };
   }, []);
+
+  const handleCommunityClick = () => {
+    if (currentUser) {
+      // User is logged in, redirect to kitties page
+      navigate('/kitties');
+    } else {
+      // User is not logged in, redirect to signup
+      navigate('/signup');
+    }
+  };
 
   return (
     <div>
@@ -458,7 +478,7 @@ const Home = () => {
 
           <div className="text-center mt-12">
             <button
-              onClick={goToSignup}
+              onClick={handleKittyButtonClick}
               className="px-8 py-3 rounded-lg shadow-lg text-white transition-transform transform hover:scale-105 cursor-pointer"
               style={{ backgroundColor: 'var(--primary)' }}
             >
@@ -621,12 +641,12 @@ const Home = () => {
                   <div className="flex-1 min-w-[140px]">
                     <button
                       className="w-full h-full bg-black/30 backdrop-blur-sm text-white border border-white/30 px-4 py-3 rounded-lg flex items-center justify-center hover:bg-black/40 transition-all cursor-pointer"
-                      onClick={goToSignup}
+                      onClick={handleCommunityClick}
                     >
                       <FaUsers size={20} className="mr-2 flex-shrink-0" />
                       <div className="text-left">
-                        <div className="text-xs">Join our</div>
-                        <div className="text-sm font-semibold">Community</div>
+                        <div className="text-xs">{currentUser ? 'Go to' : 'Join our'}</div>
+                        <div className="text-sm font-semibold">{currentUser ? 'Your Kitties' : 'Community'}</div>
                       </div>
                     </button>
                   </div>
