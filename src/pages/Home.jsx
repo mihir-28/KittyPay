@@ -537,9 +537,9 @@ const Home = () => {
           <div className="bg-gradient-to-r from-[var(--primary)] to-[#8a4fff] rounded-2xl p-8 md:p-12 shadow-xl">
             <div className="grid md:grid-cols-2 gap-8 items-center">
               <div className="text-white">
-                <h2 className="text-3xl md:text-4xl font-bold mb-4">Mobile App Coming Soon</h2>
+                <h2 className="text-3xl md:text-4xl font-bold mb-4">PWA Coming Soon</h2>
                 <p className="text-lg mb-6 opacity-90">
-                  We're working on a dedicated mobile app for iOS and Android. Use the web version for now, and be the first to know when our app launches!
+                  We're developing a Progressive Web App (PWA) that you can install directly on your device. Enjoy the same great experience with home screen access and app-like convenience!
                 </p>
                 <div className="flex flex-row flex-wrap w-full gap-4">
                   <div className="flex-1 min-w-[140px]">
@@ -562,7 +562,7 @@ const Home = () => {
                       <FaDownload size={20} className="mr-2 flex-shrink-0" />
                       <div className="text-left">
                         <div className="text-xs">Get notified at</div>
-                        <div className="text-sm font-semibold">App Launch</div>
+                        <div className="text-sm font-semibold">Launch</div>
                       </div>
                     </button>
                   </div>
@@ -573,9 +573,9 @@ const Home = () => {
                   <div className="absolute -inset-4 bg-white opacity-20 rounded-full blur-xl"></div>
                   <div className="relative z-10 bg-white/10 backdrop-blur-sm rounded-3xl border border-white/20 p-8 text-center">
                     <div className="text-white text-5xl mb-4">📱</div>
-                    <h3 className="text-white text-xl font-bold mb-3">Mobile App</h3>
+                    <h3 className="text-white text-xl font-bold mb-3">Install on Device</h3>
                     <div className="inline-block px-4 py-2 bg-white/20 rounded-full text-white font-medium">
-                      In Development
+                      Coming Soon
                     </div>
                   </div>
                 </div>
