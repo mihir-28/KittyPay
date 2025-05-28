@@ -3,6 +3,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ScrollToTop from "./components/common/ScrollToTop";
 import RouteTracker from "./components/common/RouteTracker";
+import PWAInstallPrompt from "./components/common/PWAInstallPrompt";
 import { Toaster } from 'react-hot-toast';
 
 // Import your pages
@@ -24,6 +25,7 @@ function App() {
       <Router>
         <ScrollToTop />
         <RouteTracker />
+        <PWAInstallPrompt />
         <Toaster 
           position="top-right"
           toastOptions={{

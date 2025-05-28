@@ -1,0 +1,23 @@
+{
+  "name": "KittyPay - The Modern Desi Way to Split Expenses",
+  "short_name": "KittyPay",
+  "description": "A sleek and smart expense-splitting app for groups of friends, flatmates, and families.",
+  "theme_color": "#5271FF",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "scope": "/",
+  "start_url": "/",
+  "icons": [
+    {
+      "src": "logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+} 

@@ -162,9 +162,38 @@ npm run test:e2e
 KittyPay is a Progressive Web App (PWA) which means you can:
 
 - Install it on your home screen for a native app-like experience
-- Use it offline
-- Receive push notifications (coming soon)
-- Enjoy fast loading times with service worker caching
+- Use it offline with full functionality thanks to service worker caching
+- Receive notifications about new content updates
+- Enjoy fast loading times with optimized asset caching
+- Sync data when back online after being offline
+
+### PWA Installation
+
+On supported browsers (Chrome, Edge, Safari on iOS, etc.):
+
+1. Visit the KittyPay website
+2. You'll see an "Install App" button in the bottom left corner
+3. Click it to install KittyPay as a standalone app
+4. Alternatively, use your browser's built-in "Add to Home Screen" or "Install" option
+
+### Offline Support
+
+KittyPay works offline thanks to service worker caching:
+
+- Core app files are cached for instant loading
+- Your kitties and expenses data is stored locally when offline
+- When you're back online, data is automatically synced with the server
+- You'll receive a notification when new content is available
+
+### Testing PWA Features
+
+In development mode, you can test PWA functionality by running:
+```js
+// In your browser console
+window.runPWATests()
+```
+
+This will check service worker registration, cache status, and offline capabilities.
 
 ## 🐛 Bug Reporting
 

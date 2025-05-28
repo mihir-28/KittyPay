@@ -45,6 +45,11 @@ const Profile = () => {
   const [recentActivity, setRecentActivity] = useState([]);
   const [activityLoading, setActivityLoading] = useState(false);
 
+  // Add state for PWA installation
+  const [installPrompt, setInstallPrompt] = useState(null);
+  const [isPWAInstallable, setIsPWAInstallable] = useState(false);
+  const [isPWAInstalled, setIsPWAInstalled] = useState(false);
+
   // Fetch user data function - made reusable with useCallback
   const fetchUserData = useCallback(async () => {
     if (!currentUser) {
@@ -242,6 +247,80 @@ const Profile = () => {
 
     // Dispatch an event so other components can react to the theme change
     window.dispatchEvent(new CustomEvent('theme-changed', { detail: { isDark: newIsDark } }));
+  };
+
+  // Add effect for PWA installation
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      // Prevent Chrome 76+ from automatically showing the prompt
+      e.preventDefault();
+      // Store the event for later use
+      console.log('🔧 beforeinstallprompt event fired!');
+      setInstallPrompt(e);
+      setIsPWAInstallable(true);
+    };
+    
+    const handleAppInstalled = () => {
+      console.log('🎉 App was installed!');
+      setIsPWAInstalled(true);
+      setIsPWAInstallable(false);
+      localStorage.setItem('pwa_installed', 'true');
+    };
+    
+    // Check if app is already installed
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      console.log('📱 App already in standalone mode');
+      setIsPWAInstalled(true);
+      localStorage.setItem('pwa_installed', 'true');
+    }
+    
+    // Check if localStorage indicates the app is installed
+    if (localStorage.getItem('pwa_installed') === 'true') {
+      console.log('📦 App marked as installed in localStorage');
+      setIsPWAInstalled(true);
+    } else {
+      // If not installed, make it installable for testing
+      console.log('🧪 App not installed, forcing installable for testing');
+      setIsPWAInstallable(true);
+    }
+    
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+    
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+  
+  // Add installation handler
+  const handleInstallApp = async () => {
+    console.log('📲 Install button clicked!', { installPrompt });
+    
+    if (installPrompt) {
+      // Show the installation prompt
+      installPrompt.prompt();
+      
+      // Wait for the user to respond
+      const { outcome } = await installPrompt.userChoice;
+      console.log(`👤 User choice: ${outcome}`);
+      
+      if (outcome === 'accepted') {
+        setIsPWAInstalled(true);
+        localStorage.setItem('pwa_installed', 'true');
+      }
+      
+      // We can only use the prompt once, need to reset for next time
+      setInstallPrompt(null);
+    } else {
+      // If no install prompt is available (iOS or manual installation needed)
+      console.log('⚠️ No install prompt available, showing manual instructions');
+      alert(
+        "To install this app on your device:\n\n" +
+        "• On iOS: tap the Share icon (rectangle with arrow) and select 'Add to Home Screen'\n\n" +
+        "• On Android: open browser menu and select 'Install App' or 'Add to Home Screen'"
+      );
+    }
   };
 
   if (!currentUser) {
@@ -1052,6 +1131,66 @@ const Profile = () => {
               </div>
             )}
           </motion.div>
+
+          {/* Add PWA Installation section */}
+          {isPWAInstallable && !isPWAInstalled && (
+            <motion.div 
+              className="rounded-lg shadow-md p-4 mb-6"
+              style={{ backgroundColor: 'var(--surface)' }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6, duration: 0.5 }}
+            >
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
+                <div className="flex items-center gap-3 mb-3 md:mb-0">
+                  <div className="p-2 rounded-full" style={{ backgroundColor: 'var(--primary-light, rgba(239, 71, 111, 0.1))' }}>
+                    <svg className="w-6 h-6" style={{ color: 'var(--primary)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>Install KittyPay App</h3>
+                    <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Install our app for a better experience, offline access, and faster loading</p>
+                  </div>
+                </div>
+                <motion.button
+                  onClick={handleInstallApp}
+                  className="px-4 py-2 text-white rounded-md transition-colors"
+                  style={{ backgroundColor: 'var(--primary)' }}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Install Now
+                </motion.button>
+              </div>
+            </motion.div>
+          )}
+          
+          {isPWAInstalled && (
+            <motion.div 
+              className="border rounded-lg p-4 mb-6"
+              style={{ 
+                backgroundColor: 'var(--success-light, rgba(6, 214, 160, 0.1))', 
+                borderColor: 'var(--success, #06D6A0)',
+                color: 'var(--text-primary)'
+              }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6, duration: 0.5 }}
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-full" style={{ backgroundColor: 'var(--success, #06D6A0)', opacity: 0.2 }}>
+                  <svg className="w-5 h-5" style={{ color: 'var(--success, #06D6A0)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>KittyPay App Installed</h3>
+                  <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>You've successfully installed our app and can access it from your home screen</p>
+                </div>
+              </div>
+            </motion.div>
+          )}
         </motion.div>
       </div>
 
