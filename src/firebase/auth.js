@@ -25,7 +25,8 @@ export const signUpWithEmail = async (email, password, displayName) => {
     // Update profile with displayName
     await updateProfile(user, { displayName });
     
-    // Create user document in Firestore
+    // Create user document in Firestore - pass the displayName directly
+    // to ensure it's used even if not yet visible in the user object
     await createUserProfile(user, { displayName });
     
     return { user };
@@ -153,11 +154,15 @@ export const createUserProfile = async (user, additionalData = {}) => {
   const snapshot = await getDoc(userRef);
   
   if (!snapshot.exists()) {
-    const { email, displayName, photoURL } = user;
+    const { email, photoURL } = user;
+    // Prefer the additionalData.displayName over user.displayName
+    // This ensures the displayName is used even if the user object
+    // hasn't been updated yet after updateProfile
+    const displayName = additionalData.displayName || user.displayName || '';
     
     try {
       await setDoc(userRef, {
-        displayName: displayName || additionalData.displayName || '',
+        displayName,
         email,
         photoURL: photoURL || '',
         createdAt: serverTimestamp(),
