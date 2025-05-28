@@ -9,7 +9,8 @@ import {
   query,
   where,
   serverTimestamp,
-  orderBy
+  orderBy,
+  deleteDoc
 } from "firebase/firestore";
 import { db } from "./config";
 
@@ -730,6 +731,38 @@ export const removeKittyMember = async (kittyId, memberId) => {
     return { success: true };
   } catch (error) {
     console.error("Error removing member:", error);
+    return { error: error.message };
+  }
+};
+
+/**
+ * Delete a kitty
+ * @param {string} kittyId - The kitty ID to delete
+ * @param {string} userId - The user ID of the person attempting to delete
+ * @returns {Promise<Object>} - Result of the operation
+ */
+export const deleteKitty = async (kittyId, userId) => {
+  try {
+    const kittyRef = doc(db, "kitties", kittyId);
+    const kittyDoc = await getDoc(kittyRef);
+
+    if (!kittyDoc.exists()) {
+      return { error: "Kitty not found" };
+    }
+
+    const kittyData = kittyDoc.data();
+    
+    // Check if the user is the owner of the kitty
+    if (kittyData.createdBy !== userId) {
+      return { error: "Only the owner can delete a kitty" };
+    }
+    
+    // Delete the kitty document
+    await deleteDoc(kittyRef);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error deleting kitty:", error);
     return { error: error.message };
   }
 };

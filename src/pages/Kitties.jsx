@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 import { useAuth } from "../contexts/AuthContext";
-import { FiPlus, FiTrash2, FiEdit2, FiDollarSign, FiUsers, FiX, FiEye } from "react-icons/fi";
-import { createKitty, getUserKitties, addExpense, addMember } from "../firebase/kitties";
+import { FiPlus, FiTrash2, FiEdit2, FiDollarSign, FiUsers, FiX, FiEye, FiAlertTriangle } from "react-icons/fi";
+import { createKitty, getUserKitties, addExpense, addMember, deleteKitty } from "../firebase/kitties";
 import { trackKittyCreated, trackExpenseAdded, trackMemberAdded } from "../firebase/analytics";
 import KittyDetails from "../components/KittyDetails";
 
@@ -24,6 +24,8 @@ const Kitties = () => {
   const [selectedKittyId, setSelectedKittyId] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [kittyToDelete, setKittyToDelete] = useState(null);
   
   // Form states
   const [kittyName, setKittyName] = useState("");
@@ -389,8 +391,49 @@ const Kitties = () => {
   };
 
   // Go back to the kitties list
-  const handleBackToKitties = () => {
+  const handleBackToKitties = (data) => {
     setSelectedKittyId(null);
+    
+    // Check if a kitty was deleted in the details view
+    if (data && data.deleted && data.kittyId) {
+      // Update the kitties list by removing the deleted kitty
+      const updatedKitties = kitties.filter(kitty => kitty.id !== data.kittyId);
+      setKitties(updatedKitties);
+    }
+  };
+
+  const handleDeleteKitty = async () => {
+    if (!kittyToDelete) return;
+    
+    setIsSubmitting(true);
+    const loadingToast = toast.loading("Deleting kitty...");
+    
+    try {
+      const result = await deleteKitty(kittyToDelete.id, currentUser.uid);
+      
+      if (result.error) {
+        throw new Error(result.error);
+      }
+      
+      // Update the UI
+      const updatedKitties = kitties.filter(kitty => kitty.id !== kittyToDelete.id);
+      setKitties(updatedKitties);
+      
+      toast.success("Kitty deleted successfully");
+    } catch (error) {
+      console.error("Error deleting kitty:", error);
+      toast.error(error.message || "Failed to delete kitty");
+    } finally {
+      toast.dismiss(loadingToast);
+      setIsSubmitting(false);
+      setShowDeleteConfirmation(false);
+      setKittyToDelete(null);
+    }
+  };
+
+  const openDeleteConfirmation = (kitty) => {
+    setKittyToDelete(kitty);
+    setShowDeleteConfirmation(true);
   };
 
   return (
@@ -401,15 +444,17 @@ const Kitties = () => {
         <>
           <div className="flex justify-between items-center mb-8">
             <h1 className="text-3xl font-bold">Your Kitties</h1>
-            <button
-              onClick={() => {
-                setShowCreateModal(true);
-                setError('');
-              }}
-              className="bg-[var(--primary)] hover:opacity-90 text-white py-2 px-4 rounded-lg flex items-center gap-2"
-            >
-              <FiPlus /> New Kitty
-            </button>
+            {kitties.length > 0 && (
+              <button
+                onClick={() => {
+                  setShowCreateModal(true);
+                  setError('');
+                }}
+                className="bg-[var(--primary)] hover:opacity-90 text-white py-2 px-4 rounded-lg flex items-center gap-2"
+              >
+                <FiPlus /> New Kitty
+              </button>
+            )}
           </div>
 
           {loading ? (
@@ -439,7 +484,18 @@ const Kitties = () => {
                   animate={{ opacity: 1, y: 0 }}
                   className="bg-[var(--surface)] p-4 sm:p-5 rounded-xl shadow-sm border border-[var(--border)] flex flex-col h-full"
                 >
-                  <h2 className="text-xl font-bold mb-2">{kitty.name}</h2>
+                  <div className="flex justify-between items-start mb-2">
+                    <h2 className="text-xl font-bold">{kitty.name}</h2>
+                    {kitty.members.some(m => m.userId === currentUser.uid && m.isOwner) && (
+                      <button
+                        onClick={() => openDeleteConfirmation(kitty)}
+                        className="p-1.5 text-[var(--text-secondary)] hover:text-red-500 rounded"
+                        title="Delete kitty"
+                      >
+                        <FiTrash2 size={16} />
+                      </button>
+                    )}
+                  </div>
                   <p className="text-[var(--text-secondary)] mb-4">{kitty.description}</p>
 
                   <div className="flex justify-between items-center mb-4 pb-4 border-b border-[var(--border)]">
@@ -558,7 +614,7 @@ const Kitties = () => {
           )}
 
           {showCreateModal && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
               <motion.div
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
@@ -967,6 +1023,46 @@ const Kitties = () => {
                     </button>
                   </div>
                 </form>
+              </motion.div>
+            </div>
+          )}
+
+          {/* Delete Confirmation Modal */}
+          {showDeleteConfirmation && kittyToDelete && (
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="bg-[var(--surface)] p-5 sm:p-6 rounded-xl w-full max-w-md"
+              >
+                <div className="flex items-center mb-4">
+                  <FiAlertTriangle size={24} className="text-red-500 mr-3" />
+                  <h2 className="text-xl font-bold">Delete Kitty?</h2>
+                </div>
+                
+                <p className="mb-6 text-[var(--text-secondary)]">
+                  Are you sure you want to delete "{kittyToDelete.name}"? This will permanently delete all expenses and member data. This action cannot be undone.
+                </p>
+                
+                <div className="flex gap-3 justify-end">
+                  <button
+                    onClick={() => {
+                      setShowDeleteConfirmation(false);
+                      setKittyToDelete(null);
+                    }}
+                    className="px-4 py-2 border border-[var(--border)] rounded-lg hover:bg-[var(--background)]"
+                    disabled={isSubmitting}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDeleteKitty}
+                    className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? "Deleting..." : "Delete Kitty"}
+                  </button>
+                </div>
               </motion.div>
             </div>
           )}

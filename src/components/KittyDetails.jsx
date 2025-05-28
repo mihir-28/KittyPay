@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
-import { getKittyById, updateKittyExpense, updateKittySettlement, deleteKittyExpense, updateKittyMember, removeKittyMember } from "../firebase/kitties";
+import { getKittyById, updateKittyExpense, updateKittySettlement, deleteKittyExpense, updateKittyMember, removeKittyMember, deleteKitty } from "../firebase/kitties";
 import { trackSettlement } from "../firebase/analytics";
 import { FiArrowLeft, FiDollarSign, FiUsers, FiEdit2, FiCheck, FiX, FiTrash2, FiUser, FiAlertTriangle } from "react-icons/fi";
 import { motion } from "framer-motion";
@@ -464,6 +464,37 @@ const KittyDetails = ({ kittyId, onBack }) => {
     }
   };
 
+  const handleDeleteKitty = async () => {
+    // Show confirmation dialog
+    document.dispatchEvent(new CustomEvent('SHOW_DELETE_CONFIRMATION', {
+      detail: {
+        title: "Delete Kitty?",
+        message: `Are you sure you want to delete "${kitty.name}"? This will permanently delete all expenses and member data. This action cannot be undone.`,
+        onConfirm: async () => {
+          try {
+            const loadingToast = toast.loading("Deleting kitty...");
+            const result = await deleteKitty(kittyId, currentUser.uid);
+            
+            if (result.error) {
+              toast.dismiss(loadingToast);
+              toast.error(result.error);
+              return;
+            }
+            
+            toast.dismiss(loadingToast);
+            toast.success("Kitty deleted successfully");
+            // Pass deleted kitty ID back to parent
+            onBack({ deleted: true, kittyId });
+          } catch (error) {
+            console.error("Error deleting kitty:", error);
+            toast.error("Failed to delete kitty");
+          }
+        },
+        type: 'danger'
+      }
+    }));
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center py-20">
@@ -471,14 +502,28 @@ const KittyDetails = ({ kittyId, onBack }) => {
       </div>
     );
   } if (!kitty) return null;
+  
+  const isOwner = kitty.members.find(m => m.userId === currentUser.uid)?.isOwner;
+  
   return (
     <div className="w-full mx-auto max-w-7xl px-3 sm:px-6 py-4">
-      <button
-        onClick={onBack}
-        className="flex items-center mb-6 text-[var(--primary)] hover:underline"
-      >
-        <FiArrowLeft className="mr-2" /> Back to Kitties
-      </button>
+      <div className="flex justify-between items-center mb-6">
+        <button
+          onClick={onBack}
+          className="flex items-center text-[var(--primary)] hover:underline"
+        >
+          <FiArrowLeft className="mr-2" /> Back to Kitties
+        </button>
+        
+        {isOwner && (
+          <button
+            onClick={handleDeleteKitty}
+            className="flex items-center text-red-500 hover:text-red-600"
+          >
+            <FiTrash2 className="mr-1" /> Delete Kitty
+          </button>
+        )}
+      </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
         {/* Header section - spans full width */}
