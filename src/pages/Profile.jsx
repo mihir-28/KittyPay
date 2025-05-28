@@ -267,21 +267,33 @@ const Profile = () => {
       localStorage.setItem('pwa_installed', 'true');
     };
     
-    // Check if app is already installed
-    if (window.matchMedia('(display-mode: standalone)').matches) {
+    // Check if app is actually installed in standalone mode
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                        window.navigator.standalone === true; // For iOS
+    
+    if (isStandalone) {
       console.log('📱 App already in standalone mode');
       setIsPWAInstalled(true);
+      setIsPWAInstallable(false);
       localStorage.setItem('pwa_installed', 'true');
-    }
-    
-    // Check if localStorage indicates the app is installed
-    if (localStorage.getItem('pwa_installed') === 'true') {
-      console.log('📦 App marked as installed in localStorage');
-      setIsPWAInstalled(true);
     } else {
-      // If not installed, make it installable for testing
-      console.log('🧪 App not installed, forcing installable for testing');
-      setIsPWAInstallable(true);
+      // Only if not in standalone mode, check localStorage
+      const isStorageInstalled = localStorage.getItem('pwa_installed') === 'true';
+      
+      if (isStorageInstalled) {
+        console.log('⚠️ Storage says installed but not in standalone mode, correcting...');
+        // If storage says installed but we're not in standalone mode, correct it
+        localStorage.removeItem('pwa_installed');
+        setIsPWAInstalled(false);
+        // Show the install option regardless of prompt availability
+        setIsPWAInstallable(true);
+      } else {
+        // Not installed according to any method
+        console.log('📲 App not installed, showing manual install option');
+        setIsPWAInstalled(false);
+        // Show the install option regardless of prompt availability
+        setIsPWAInstallable(true);
+      }
     }
     
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -1061,7 +1073,7 @@ const Profile = () => {
 
           {/* Activity History Section */}
           <motion.div
-            className="bg-opacity-60 rounded-xl p-6 shadow-lg"
+            className="bg-opacity-60 rounded-xl p-6 shadow-lg mb-8"
             style={{ backgroundColor: 'var(--surface)' }}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1135,7 +1147,7 @@ const Profile = () => {
           {/* Add PWA Installation section */}
           {isPWAInstallable && !isPWAInstalled && (
             <motion.div 
-              className="rounded-lg shadow-md p-4 mb-6"
+              className="rounded-lg shadow-md p-4 mb-6 mt-8"
               style={{ backgroundColor: 'var(--surface)' }}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -1168,7 +1180,7 @@ const Profile = () => {
           
           {isPWAInstalled && (
             <motion.div 
-              className="border rounded-lg p-4 mb-6"
+              className="border rounded-lg p-4 mb-6 mt-8"
               style={{ 
                 backgroundColor: 'var(--success-light, rgba(6, 214, 160, 0.1))', 
                 borderColor: 'var(--success, #06D6A0)',
