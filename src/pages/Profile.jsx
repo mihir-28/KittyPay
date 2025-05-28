@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { FaUser, FaEnvelope, FaCalendarAlt, FaEdit, FaKey, FaSignOutAlt, FaShieldAlt, FaCamera, FaMoneyBillWave, FaClipboardList } from 'react-icons/fa';
+import { FaUser, FaEnvelope, FaCalendarAlt, FaEdit, FaKey, FaSignOutAlt, FaShieldAlt, FaCamera, FaMoneyBillWave, FaClipboardList, FaSync } from 'react-icons/fa';
 import { FaSun, FaMoon } from 'react-icons/fa';
 import { signOut } from '../firebase/auth';
 import { updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
@@ -30,6 +30,8 @@ const Profile = () => {
   const [isDark, setIsDark] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [retryCount, setRetryCount] = useState(0);
   const fileInputRef = useRef(null);
 
   // Password change states
@@ -43,9 +45,16 @@ const Profile = () => {
   const [recentActivity, setRecentActivity] = useState([]);
   const [activityLoading, setActivityLoading] = useState(false);
 
-  useEffect(() => {
-    // If we have a current user, populate the user data
-    if (currentUser) {
+  // Fetch user data function - made reusable with useCallback
+  const fetchUserData = useCallback(async () => {
+    if (!currentUser) {
+      setProfileLoading(false);
+      return;
+    }
+
+    try {
+      setProfileLoading(true);
+      
       // Check login providers
       const isGoogleUser = currentUser.providerData?.some(provider => provider.providerId === 'google.com') || false;
       const isEmailUser = currentUser.providerData?.some(provider => provider.providerId === 'password') || false;
@@ -57,112 +66,129 @@ const Profile = () => {
         ? new Date(localStorage.getItem(`password_last_changed_${currentUser.uid}`)).toLocaleDateString()
         : null;
 
-      // Get the initial photo URL
-      // Priority: Firestore > Google profile picture > placeholder
-      const fetchUserData = async () => {
-        try {
-          // First try to get user data from Firestore
-          const userDocRef = doc(db, "users", currentUser.uid);
-          const userDoc = await getDoc(userDocRef);
+      // First try to get user data from Firestore
+      const userDocRef = doc(db, "users", currentUser.uid);
+      const userDoc = await getDoc(userDocRef);
+      
+      let photoURL = '/default.png';
+      let displayName = currentUser.displayName || (userDoc.exists() ? userDoc.data().displayName : null) || '';
+      
+      // If we have a photoURL in Firestore, use it
+      if (userDoc.exists() && userDoc.data().photoURL) {
+        photoURL = userDoc.data().photoURL;
+      }
+      // If user has a Google profile picture and no custom picture yet, use the Google one
+      else if (isGoogleUser && currentUser.providerData) {
+        // Find the Google provider data
+        const googleProvider = currentUser.providerData.find(
+          provider => provider.providerId === 'google.com'
+        );
+        
+        if (googleProvider && googleProvider.photoURL) {
+          photoURL = googleProvider.photoURL;
           
-          let photoURL = 'https://via.placeholder.com/150';
-          
-          // If we have a photoURL in Firestore, use it
-          if (userDoc.exists() && userDoc.data().photoURL) {
-            photoURL = userDoc.data().photoURL;
+          // Also save the Google profile picture to Firestore for future use
+          if (userDoc.exists()) {
+            await updateDoc(userDocRef, {
+              photoURL: googleProvider.photoURL,
+              lastUpdated: new Date()
+            });
+          } else {
+            await setDoc(userDocRef, {
+              photoURL: googleProvider.photoURL,
+              displayName: displayName || googleProvider.displayName || 'No Name',
+              email: currentUser.email,
+              lastUpdated: new Date()
+            });
           }
-          // If user has a Google profile picture and no custom picture yet, use the Google one
-          else if (isGoogleUser && currentUser.providerData) {
-            // Find the Google provider data
-            const googleProvider = currentUser.providerData.find(
-              provider => provider.providerId === 'google.com'
-            );
-            
-            if (googleProvider && googleProvider.photoURL) {
-              photoURL = googleProvider.photoURL;
-              
-              // Also save the Google profile picture to Firestore for future use
-              if (userDoc.exists()) {
-                await updateDoc(userDocRef, {
-                  photoURL: googleProvider.photoURL,
-                  lastUpdated: new Date()
-                });
-              } else {
-                await setDoc(userDocRef, {
-                  photoURL: googleProvider.photoURL,
-                  displayName: currentUser.displayName || googleProvider.displayName || 'No Name',
-                  email: currentUser.email,
-                  lastUpdated: new Date()
-                });
-              }
-            }
-          }
-          // Otherwise fall back to Firebase Auth photoURL or placeholder
-          else if (currentUser.photoURL && !currentUser.photoURL.startsWith('user_photo:')) {
-            photoURL = currentUser.photoURL;
-          }
-          
-          // Set user data with the determined photoURL
-          setUserData({
-            displayName: currentUser.displayName || 'No Name',
-            email: currentUser.email || 'No Email',
-            photoURL: photoURL,
-            createdAt: currentUser.metadata?.creationTime
-              ? new Date(currentUser.metadata.creationTime).toLocaleDateString()
-              : 'Unknown',
-            lastSignInTime: currentUser.metadata?.lastSignInTime
-              ? new Date(currentUser.metadata.lastSignInTime).toLocaleDateString()
-              : 'Unknown',
-            isGoogleUser, 
-            isEmailUser,
-            isEmailLinkUser,
-            passwordLastChanged
-          });
-          
-          setEditedName(currentUser.displayName || '');
-          
-        } catch (error) {
-          console.error("Error fetching user data:", error);
-          
-          // Fallback to basic Auth data if Firestore fetch fails
-          setUserData({
-            displayName: currentUser.displayName || 'No Name',
-            email: currentUser.email || 'No Email',
-            photoURL: currentUser.photoURL || 'https://via.placeholder.com/150',
-            createdAt: currentUser.metadata?.creationTime
-              ? new Date(currentUser.metadata.creationTime).toLocaleDateString()
-              : 'Unknown',
-            lastSignInTime: currentUser.metadata?.lastSignInTime
-              ? new Date(currentUser.metadata.lastSignInTime).toLocaleDateString()
-              : 'Unknown',
-            isGoogleUser, 
-            isEmailUser,
-            isEmailLinkUser,
-            passwordLastChanged
-          });
-          
-          setEditedName(currentUser.displayName || '');
         }
-      };
+      }
+      // Otherwise fall back to Firebase Auth photoURL or default.png
+      else if (currentUser.photoURL && !currentUser.photoURL.startsWith('user_photo:')) {
+        photoURL = currentUser.photoURL;
+      }
       
-      fetchUserData();
+      // Set user data with the determined photoURL
+      setUserData({
+        displayName: displayName || 'No Name',
+        email: currentUser.email || 'No Email',
+        photoURL: photoURL,
+        createdAt: currentUser.metadata?.creationTime
+          ? new Date(currentUser.metadata.creationTime).toLocaleDateString()
+          : 'Unknown',
+        lastSignInTime: currentUser.metadata?.lastSignInTime
+          ? new Date(currentUser.metadata.lastSignInTime).toLocaleDateString()
+          : 'Unknown',
+        isGoogleUser, 
+        isEmailUser,
+        isEmailLinkUser,
+        passwordLastChanged
+      });
       
-      // Fetch user's recent activity
-      const fetchUserActivity = async () => {
-        try {
-          setActivityLoading(true);
-          const dashboardData = await getDashboardData(currentUser.uid);
-          setRecentActivity(dashboardData.recentExpenses || []);
-        } catch (error) {
-          console.error("Error fetching user activity:", error);
-        } finally {
-          setActivityLoading(false);
-        }
-      };
+      setEditedName(displayName || '');
+      setProfileLoading(false);
       
-      fetchUserActivity();
+      // If the name is missing but we're within retry attempts, try again in a moment
+      // This helps after signup when Firebase might not have propagated the displayName yet
+      if (!displayName && retryCount < 3) {
+        setTimeout(() => {
+          setRetryCount(prev => prev + 1);
+          fetchUserData();
+        }, 1500); // Wait 1.5 seconds before retrying
+      }
+      
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+      
+      // Fallback to basic Auth data if Firestore fetch fails
+      setUserData({
+        displayName: currentUser.displayName || 'No Name',
+        email: currentUser.email || 'No Email',
+        photoURL: currentUser.photoURL || '/default.png',
+        createdAt: currentUser.metadata?.creationTime
+          ? new Date(currentUser.metadata.creationTime).toLocaleDateString()
+          : 'Unknown',
+        lastSignInTime: currentUser.metadata?.lastSignInTime
+          ? new Date(currentUser.metadata.lastSignInTime).toLocaleDateString()
+          : 'Unknown',
+        isGoogleUser: currentUser.providerData?.some(provider => provider.providerId === 'google.com') || false, 
+        isEmailUser: currentUser.providerData?.some(provider => provider.providerId === 'password') || false,
+        isEmailLinkUser: currentUser.providerData?.some(provider => provider.providerId === 'emailLink') || false,
+        passwordLastChanged
+      });
+      
+      setEditedName(currentUser.displayName || '');
+      setProfileLoading(false);
     }
-  }, [currentUser]);
+  }, [currentUser, retryCount]);
+
+  useEffect(() => {
+    fetchUserData();
+    
+    // Fetch user's recent activity
+    const fetchUserActivity = async () => {
+      if (!currentUser) return;
+      
+      try {
+        setActivityLoading(true);
+        const dashboardData = await getDashboardData(currentUser.uid);
+        setRecentActivity(dashboardData.recentExpenses || []);
+      } catch (error) {
+        console.error("Error fetching user activity:", error);
+      } finally {
+        setActivityLoading(false);
+      }
+    };
+    
+    fetchUserActivity();
+  }, [currentUser, fetchUserData]);
+  
+  // Function to manually refresh profile data
+  const handleRefreshProfile = () => {
+    setRetryCount(0); // Reset retry count
+    fetchUserData();
+  };
+
   // Dark mode toggle effect
   useEffect(() => {
     // Function to check and update theme state
@@ -580,244 +606,270 @@ const Profile = () => {
               >
                 My Profile
               </motion.h1>
-            </motion.div>
-            {/* Profile Picture with Enhanced Animated Gradient Border */}
-            <motion.div
-              className="relative mx-auto mb-8"
-              whileHover={{ scale: 1.05 }}
-              transition={{ duration: 0.3 }}
-              onClick={() => fileInputRef.current.click()}
-            >
-              <input
-                type="file"
-                ref={fileInputRef}
-                className="hidden"
-                accept="image/*"
-                onChange={handleFileChange}
-              />
-
-              <div className="w-40 h-40 mx-auto rounded-full relative">
-                {/* More vibrant animated gradient border with rotation */}
-                <motion.div
-                  className="absolute inset-0 rounded-full z-0"
-                  style={{
-                    padding: '4px',
-                    background: 'linear-gradient(45deg, var(--primary), #ff36f5, #4580ff, #f660ff, var(--primary))',
-                    backgroundSize: '400% 400%',
-                    filter: 'brightness(1.2) contrast(1.1)'
+              
+              {/* Profile refresh button */}
+              {userData.displayName === 'No Name' && (
+                <motion.button
+                  className="flex items-center mx-auto mt-2 text-sm px-3 py-1 rounded-full"
+                  style={{ 
+                    backgroundColor: 'var(--primary-light)', 
+                    color: 'var(--primary)' 
                   }}
-                  animate={{
-                    backgroundPosition: ['0% 0%', '100% 100%', '0% 0%'],
-                    rotate: [0, 360]
-                  }}
-                  transition={{
-                    backgroundPosition: {
-                      duration: 8,
-                      ease: "linear",
-                      repeat: Infinity
-                    },
-                    rotate: {
-                      duration: 20,
-                      ease: "linear",
-                      repeat: Infinity
-                    }
-                  }}
+                  onClick={handleRefreshProfile}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                 >
-                  <div className="w-full h-full bg-black rounded-full"></div>
-                </motion.div>
-
-                <img
-                  src={userData.photoURL || null}
-                  alt="Profile"
-                  className="absolute inset-0 w-full h-full object-cover rounded-full p-[6px] z-10"
-                  onError={(e) => {
-                    e.target.onerror = null;
-                    e.target.src = 'https://via.placeholder.com/150';
-                  }}
-                />
-
-                {/* Visible edit overlay on both mobile and desktop */}
-                <motion.div
-                  className={`absolute inset-0 z-20 flex items-center justify-center rounded-full cursor-pointer backdrop-blur-sm ${isUploading ? 'opacity-100' : 'opacity-0 hover:opacity-100'}`}
-                  style={{
-                    background: 'radial-gradient(circle, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.5) 100%)',
-                    transition: 'opacity 0.2s ease-in-out'
-                  }}
-                  whileHover={{
-                    scale: 1.05,
-                    boxShadow: '0 0 15px rgba(255,255,255,0.3)'
-                  }}
-                  transition={{ duration: 0.2 }}
-                >
-                  {isUploading ? (
-                    <div className="text-center text-white">
-                      <div className="font-medium mb-2">Uploading...</div>
-                      <div className="text-white text-lg font-medium mb-1">{Math.round(uploadProgress)}%</div>
-                      <div className="w-24 h-3 bg-gray-700 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-white"
-                          style={{ width: `${uploadProgress}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-center">
-                      <motion.div
-                        whileHover={{ scale: 1.2 }}
-                        transition={{ type: "spring", stiffness: 300 }}
-                        className="flex flex-col items-center"
-                      >
-                        <FaCamera size={30} color="white" className="mb-1" />
-                        <span className="text-white text-xs font-medium">Change Photo</span>
-                      </motion.div>
-                    </div>
-                  )}
-                </motion.div>
-              </div>
-            </motion.div>
-
-            {/* User Info */}
-            <motion.div
-              className="text-center space-y-6"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4, duration: 0.5 }}
-            >
-              {isEditing ? (
-                <motion.div
-                  className="mb-4"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                    Display Name
-                  </label>
-                  <input
-                    type="text"
-                    value={editedName}
-                    onChange={(e) => setEditedName(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-opacity-50 transition-all"
-                    style={{
-                      borderColor: 'var(--border)',
-                      backgroundColor: 'var(--input-background)',
-                      color: 'var(--text-primary)',
-                      focusRing: 'var(--primary)'
-                    }}
-                  />
-                </motion.div>
-              ) : (
-                <motion.h2
-                  className="text-3xl font-bold"
-                  style={{ color: 'var(--text-primary)' }}
-                  whileHover={{ scale: 1.02 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  {userData.displayName}
-                </motion.h2>
+                  <FaSync className="mr-1" size={14} /> Refresh Profile
+                </motion.button>
               )}
-
-              <motion.div
-                className="flex items-center justify-center space-x-2"
-                whileHover={{ scale: 1.02 }}
-              >
-                <FaEnvelope style={{ color: 'var(--text-secondary)' }} />
-                <p className="text-lg" style={{ color: 'var(--text-secondary)' }}>
-                  {userData.email}
-                </p>
-              </motion.div>
-
-              <div className="flex flex-col items-center space-y-2">
-                <motion.div
-                  className="flex items-center space-x-2"
-                  whileHover={{ scale: 1.02 }}
-                >
-                  <FaCalendarAlt style={{ color: 'var(--text-secondary)' }} />
-                  <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                    Member since: {userData.createdAt}
-                  </p>
-                </motion.div>
-
-                <motion.div
-                  className="flex items-center space-x-2"
-                  whileHover={{ scale: 1.02 }}
-                >
-                  <FaCalendarAlt style={{ color: 'var(--text-secondary)' }} />
-                  <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                    Last sign in: {userData.lastSignInTime}
-                  </p>
-                </motion.div>
-              </div>
-
-              {/* Profile Action Buttons */}
-              <motion.div
-                className="mt-8 flex flex-wrap justify-center gap-3"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6, duration: 0.5 }}
-              >
-                {isEditing ? (
-                  <>
-                    <motion.button
-                      className="px-5 py-2 rounded-full font-medium flex items-center"
-                      style={{
-                        backgroundColor: 'var(--primary)',
-                        color: 'var(--text-on-primary)'
-                      }}
-                      onClick={handleUpdateProfile}
-                      disabled={isLoading}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      {isLoading ? 'Saving...' : 'Save Changes'}
-                    </motion.button>
-                    <motion.button
-                      className="px-5 py-2 rounded-full font-medium border flex items-center"
-                      style={{
-                        color: 'var(--text-primary)',
-                        borderColor: 'var(--text-secondary)'
-                      }}
-                      onClick={() => {
-                        setIsEditing(false);
-                        setEditedName(userData.displayName);
-                      }}
-                      disabled={isLoading}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      Cancel
-                    </motion.button>
-                  </>
-                ) : (
-                  <>
-                    <motion.button
-                      className="px-5 py-2 rounded-full font-medium mr-3 flex items-center"
-                      style={{
-                        backgroundColor: 'var(--primary)',
-                        color: 'var(--text-on-primary)'
-                      }}
-                      onClick={() => setIsEditing(true)}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <FaEdit className="mr-2" /> Edit Profile
-                    </motion.button>
-                    <motion.button
-                      className="px-5 py-2 rounded-full font-medium border flex items-center"
-                      style={{
-                        color: 'var(--danger, #ff4d4d)',
-                        borderColor: 'var(--danger, #ff4d4d)'
-                      }}
-                      onClick={handleSignOut}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <FaSignOutAlt className="mr-2" /> Sign Out
-                    </motion.button>
-                  </>
-                )}
-              </motion.div>
             </motion.div>
+            
+            {/* Profile loading indicator */}
+            {profileLoading ? (
+              <div className="flex justify-center items-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[var(--primary)]"></div>
+              </div>
+            ) : (
+              <>
+                {/* Profile Picture with Enhanced Animated Gradient Border */}
+                <motion.div
+                  className="relative mx-auto mb-8"
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ duration: 0.3 }}
+                  onClick={() => fileInputRef.current.click()}
+                >
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                  />
+
+                  <div className="w-40 h-40 mx-auto rounded-full relative">
+                    {/* More vibrant animated gradient border with rotation */}
+                    <motion.div
+                      className="absolute inset-0 rounded-full z-0"
+                      style={{
+                        padding: '4px',
+                        background: 'linear-gradient(45deg, var(--primary), #ff36f5, #4580ff, #f660ff, var(--primary))',
+                        backgroundSize: '400% 400%',
+                        filter: 'brightness(1.2) contrast(1.1)'
+                      }}
+                      animate={{
+                        backgroundPosition: ['0% 0%', '100% 100%', '0% 0%'],
+                        rotate: [0, 360]
+                      }}
+                      transition={{
+                        backgroundPosition: {
+                          duration: 8,
+                          ease: "linear",
+                          repeat: Infinity
+                        },
+                        rotate: {
+                          duration: 20,
+                          ease: "linear",
+                          repeat: Infinity
+                        }
+                      }}
+                    >
+                      <div className="w-full h-full bg-black rounded-full"></div>
+                    </motion.div>
+
+                    <img
+                      src={userData.photoURL || null}
+                      alt="Profile"
+                      className="absolute inset-0 w-full h-full object-cover rounded-full p-[6px] z-10"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = '/default.png';
+                      }}
+                    />
+
+                    {/* Visible edit overlay on both mobile and desktop */}
+                    <motion.div
+                      className={`absolute inset-0 z-20 flex items-center justify-center rounded-full cursor-pointer backdrop-blur-sm ${isUploading ? 'opacity-100' : 'opacity-0 hover:opacity-100'}`}
+                      style={{
+                        background: 'radial-gradient(circle, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.5) 100%)',
+                        transition: 'opacity 0.2s ease-in-out'
+                      }}
+                      whileHover={{
+                        scale: 1.05,
+                        boxShadow: '0 0 15px rgba(255,255,255,0.3)'
+                      }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      {isUploading ? (
+                        <div className="text-center text-white">
+                          <div className="font-medium mb-2">Uploading...</div>
+                          <div className="text-white text-lg font-medium mb-1">{Math.round(uploadProgress)}%</div>
+                          <div className="w-24 h-3 bg-gray-700 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-white"
+                              style={{ width: `${uploadProgress}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-center">
+                          <motion.div
+                            whileHover={{ scale: 1.2 }}
+                            transition={{ type: "spring", stiffness: 300 }}
+                            className="flex flex-col items-center"
+                          >
+                            <FaCamera size={30} color="white" className="mb-1" />
+                            <span className="text-white text-xs font-medium">Change Photo</span>
+                          </motion.div>
+                        </div>
+                      )}
+                    </motion.div>
+                  </div>
+                </motion.div>
+
+                {/* User Info */}
+                <motion.div
+                  className="text-center space-y-6"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4, duration: 0.5 }}
+                >
+                  {isEditing ? (
+                    <motion.div
+                      className="mb-4"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+                        Display Name
+                      </label>
+                      <input
+                        type="text"
+                        value={editedName}
+                        onChange={(e) => setEditedName(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-opacity-50 transition-all"
+                        style={{
+                          borderColor: 'var(--border)',
+                          backgroundColor: 'var(--input-background)',
+                          color: 'var(--text-primary)',
+                          focusRing: 'var(--primary)'
+                        }}
+                      />
+                    </motion.div>
+                  ) : (
+                    <motion.h2
+                      className="text-3xl font-bold"
+                      style={{ color: 'var(--text-primary)' }}
+                      whileHover={{ scale: 1.02 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      {userData.displayName}
+                    </motion.h2>
+                  )}
+
+                  <motion.div
+                    className="flex items-center justify-center space-x-2"
+                    whileHover={{ scale: 1.02 }}
+                  >
+                    <FaEnvelope style={{ color: 'var(--text-secondary)' }} />
+                    <p className="text-lg" style={{ color: 'var(--text-secondary)' }}>
+                      {userData.email}
+                    </p>
+                  </motion.div>
+
+                  <div className="flex flex-col items-center space-y-2">
+                    <motion.div
+                      className="flex items-center space-x-2"
+                      whileHover={{ scale: 1.02 }}
+                    >
+                      <FaCalendarAlt style={{ color: 'var(--text-secondary)' }} />
+                      <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                        Member since: {userData.createdAt}
+                      </p>
+                    </motion.div>
+
+                    <motion.div
+                      className="flex items-center space-x-2"
+                      whileHover={{ scale: 1.02 }}
+                    >
+                      <FaCalendarAlt style={{ color: 'var(--text-secondary)' }} />
+                      <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                        Last sign in: {userData.lastSignInTime}
+                      </p>
+                    </motion.div>
+                  </div>
+
+                  {/* Profile Action Buttons */}
+                  <motion.div
+                    className="mt-8 flex flex-wrap justify-center gap-3"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.6, duration: 0.5 }}
+                  >
+                    {isEditing ? (
+                      <>
+                        <motion.button
+                          className="px-5 py-2 rounded-full font-medium flex items-center"
+                          style={{
+                            backgroundColor: 'var(--primary)',
+                            color: 'var(--text-on-primary)'
+                          }}
+                          onClick={handleUpdateProfile}
+                          disabled={isLoading}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          {isLoading ? 'Saving...' : 'Save Changes'}
+                        </motion.button>
+                        <motion.button
+                          className="px-5 py-2 rounded-full font-medium border flex items-center"
+                          style={{
+                            color: 'var(--text-primary)',
+                            borderColor: 'var(--text-secondary)'
+                          }}
+                          onClick={() => {
+                            setIsEditing(false);
+                            setEditedName(userData.displayName);
+                          }}
+                          disabled={isLoading}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          Cancel
+                        </motion.button>
+                      </>
+                    ) : (
+                      <>
+                        <motion.button
+                          className="px-5 py-2 rounded-full font-medium mr-3 flex items-center"
+                          style={{
+                            backgroundColor: 'var(--primary)',
+                            color: 'var(--text-on-primary)'
+                          }}
+                          onClick={() => setIsEditing(true)}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          <FaEdit className="mr-2" /> Edit Profile
+                        </motion.button>
+                        <motion.button
+                          className="px-5 py-2 rounded-full font-medium border flex items-center"
+                          style={{
+                            color: 'var(--danger, #ff4d4d)',
+                            borderColor: 'var(--danger, #ff4d4d)'
+                          }}
+                          onClick={handleSignOut}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          <FaSignOutAlt className="mr-2" /> Sign Out
+                        </motion.button>
+                      </>
+                    )}
+                  </motion.div>
+                </motion.div>
+              </>
+            )}
           </div>
         </motion.div>
 
