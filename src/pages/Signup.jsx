@@ -30,6 +30,20 @@ const Signup = () => {
       [name]: value
     }));
   };
+  
+  // Separate handlers for password visibility
+  const togglePasswordVisibility = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowPassword(prev => !prev);
+  };
+  
+  const toggleConfirmPasswordVisibility = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowConfirmPassword(prev => !prev);
+  };
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -301,7 +315,7 @@ const Signup = () => {
                         required
                         value={formData.password}
                         onChange={handleChange}
-                        className="appearance-none relative block w-full px-3 py-3 pl-10 rounded-xl focus:outline-none focus:ring-2 focus:z-10 text-sm transition-all"
+                        className="appearance-none relative block w-full px-3 py-3 pl-10 pr-10 rounded-xl focus:outline-none focus:ring-2 focus:z-10 text-sm transition-all"
                         style={{
                           backgroundColor: 'var(--input-background)',
                           color: 'var(--text-primary)',
@@ -310,27 +324,26 @@ const Signup = () => {
                         }}
                         placeholder="Create a strong password"
                       />
-                      <button
-                        id="toggle-password"
-                        type="button"
+                      <div 
                         className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setShowPassword(!showPassword);
-                        }}
-                        onTouchEnd={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setShowPassword(!showPassword);
-                        }}
-                        aria-label={showPassword ? "Hide password" : "Show password"}
-                        tabIndex="-1"
+                        style={{ zIndex: 20 }}
                       >
-                        {showPassword ?
-                          <FaEyeSlash size={18} style={{ color: 'var(--text-secondary)' }} /> :
-                          <FaEye size={18} style={{ color: 'var(--text-secondary)' }} />
-                        }
-                      </button>
+                        {showPassword ? (
+                          <FaEyeSlash 
+                            size={18} 
+                            style={{ color: 'var(--text-secondary)' }}
+                            onClick={togglePasswordVisibility}
+                            className="cursor-pointer"
+                          />
+                        ) : (
+                          <FaEye 
+                            size={18} 
+                            style={{ color: 'var(--text-secondary)' }}
+                            onClick={togglePasswordVisibility}
+                            className="cursor-pointer"
+                          />
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -350,7 +363,7 @@ const Signup = () => {
                         required
                         value={formData.confirmPassword}
                         onChange={handleChange}
-                        className="appearance-none relative block w-full px-3 py-3 pl-10 rounded-xl focus:outline-none focus:ring-2 focus:z-10 text-sm transition-all"
+                        className="appearance-none relative block w-full px-3 py-3 pl-10 pr-10 rounded-xl focus:outline-none focus:ring-2 focus:z-10 text-sm transition-all"
                         style={{
                           backgroundColor: 'var(--input-background)',
                           color: 'var(--text-primary)',
@@ -359,27 +372,26 @@ const Signup = () => {
                         }}
                         placeholder="Confirm your password"
                       />
-                      <button
-                        id="toggle-confirm-password"
-                        type="button"
+                      <div 
                         className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setShowConfirmPassword(!showConfirmPassword);
-                        }}
-                        onTouchEnd={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setShowConfirmPassword(!showConfirmPassword);
-                        }}
-                        aria-label={showConfirmPassword ? "Hide password" : "Show password"}
-                        tabIndex="-1"
+                        style={{ zIndex: 20 }}
                       >
-                        {showConfirmPassword ?
-                          <FaEyeSlash size={18} style={{ color: 'var(--text-secondary)' }} /> :
-                          <FaEye size={18} style={{ color: 'var(--text-secondary)' }} />
-                        }
-                      </button>
+                        {showConfirmPassword ? (
+                          <FaEyeSlash 
+                            size={18} 
+                            style={{ color: 'var(--text-secondary)' }}
+                            onClick={toggleConfirmPasswordVisibility}
+                            className="cursor-pointer"
+                          />
+                        ) : (
+                          <FaEye 
+                            size={18} 
+                            style={{ color: 'var(--text-secondary)' }}
+                            onClick={toggleConfirmPasswordVisibility}
+                            className="cursor-pointer"
+                          />
+                        )}
+                      </div>
                     </div>
                     {error === 'Passwords do not match' && (
                       <div className="mt-2 text-sm text-red-600">
