@@ -155,7 +155,7 @@ const Signup = () => {
               </p>
             </div>
 
-            {error && (
+            {error && error !== 'Passwords do not match' && (
               <div className="mb-4 p-3 rounded-lg bg-red-100 text-red-700">
                 {error}
               </div>
@@ -310,15 +310,21 @@ const Signup = () => {
                         }}
                         placeholder="Create a strong password"
                       />
-                      <div
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer"
+                      <button
+                        type="button"
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center"
                         onClick={() => setShowPassword(!showPassword)}
+                        onTouchEnd={(e) => {
+                          e.preventDefault();
+                          setShowPassword(!showPassword);
+                        }}
+                        aria-label={showPassword ? "Hide password" : "Show password"}
                       >
                         {showPassword ?
                           <FaEyeSlash size={18} style={{ color: 'var(--text-secondary)' }} /> :
                           <FaEye size={18} style={{ color: 'var(--text-secondary)' }} />
                         }
-                      </div>
+                      </button>
                     </div>
                   </div>
 
@@ -347,16 +353,27 @@ const Signup = () => {
                         }}
                         placeholder="Confirm your password"
                       />
-                      <div
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer"
+                      <button
+                        type="button"
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center"
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        onTouchEnd={(e) => {
+                          e.preventDefault();
+                          setShowConfirmPassword(!showConfirmPassword);
+                        }}
+                        aria-label={showConfirmPassword ? "Hide password" : "Show password"}
                       >
                         {showConfirmPassword ?
                           <FaEyeSlash size={18} style={{ color: 'var(--text-secondary)' }} /> :
                           <FaEye size={18} style={{ color: 'var(--text-secondary)' }} />
                         }
-                      </div>
+                      </button>
                     </div>
+                    {error === 'Passwords do not match' && (
+                      <div className="mt-2 text-sm text-red-600">
+                        {error}
+                      </div>
+                    )}
                   </div>
                 </div>
 
