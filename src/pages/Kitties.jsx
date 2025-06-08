@@ -252,8 +252,8 @@ const Kitties = () => {
     setIsSubmitting(true);
     setError('');
 
-    if (!memberEmail || !memberName) {
-      setError("Please enter both name and email");
+    if (!memberName) {
+      setError("Please enter a name");
       setIsSubmitting(false);
       return;
     }
@@ -988,7 +988,7 @@ const Kitties = () => {
 
                   <div className="mb-6">
                     <label htmlFor="memberEmail" className="block mb-2 text-sm font-medium">
-                      Email Address*
+                      Email Address (Optional)
                     </label>
                     <input
                       type="email"
@@ -997,9 +997,9 @@ const Kitties = () => {
                       onChange={e => setMemberEmail(e.target.value)}
                       className="w-full px-4 py-2 bg-[var(--background)] border border-[var(--border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
                       placeholder="friend@example.com"
-                      required
+                      // required
                     />
-                    <p className="mt-2 text-xs text-[var(--text-secondary)]">
+                    <p className="mt-2 text-xs text-[var(--text-secondary)] hidden">
                       We'll send them an invitation to join this kitty
                     </p>
                   </div>
