@@ -5,6 +5,7 @@ import { trackSettlement } from "../firebase/analytics";
 import { FiArrowLeft, FiDollarSign, FiUsers, FiEdit2, FiCheck, FiX, FiTrash2, FiUser, FiAlertTriangle } from "react-icons/fi";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
 
 // Custom confirmation alert component
 const ConfirmationAlert = ({ isOpen, onClose, onConfirm, title, message, confirmText = "Delete", cancelText = "Cancel", type = "danger" }) => {
@@ -75,28 +76,65 @@ const ConfirmationAlert = ({ isOpen, onClose, onConfirm, title, message, confirm
 };
 
 const KittyDetails = ({ kittyId, onBack }) => {
+  const navigate = useNavigate();
+  const { currentUser } = useAuth();
   const [kitty, setKitty] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [settledTransactions, setSettledTransactions] = useState([]);
   const [editingExpense, setEditingExpense] = useState(null);
   const [editingMember, setEditingMember] = useState(null);
-  const [settledTransactions, setSettledTransactions] = useState([]);
-  const { currentUser } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
-  const [showConfirmation, setShowConfirmation] = useState(false);
-  const [confirmationData, setConfirmationData] = useState({
-    title: '',
-    message: '',
-    onConfirm: () => {},
-    type: 'danger'
-  });
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [showDeleteMemberConfirmation, setShowDeleteMemberConfirmation] = useState(false);
+  const [memberToDelete, setMemberToDelete] = useState(null);
 
-  // Add event listener for custom confirmation events
+  const handleShowConfirmation = (e) => {
+    if (e.detail && e.detail.type === 'deleteKitty') {
+      setShowDeleteConfirmation(true);
+    } else if (e.detail && e.detail.type === 'deleteMember') {
+      setMemberToDelete(e.detail.member);
+      setShowDeleteMemberConfirmation(true);
+    }
+  };
+
+  const fetchKitty = async () => {
+    try {
+      setLoading(true);
+      const kittyData = await getKittyById(kittyId);
+
+      if (!kittyData) {
+        toast.error("Kitty not found");
+        onBack();
+        return;
+      }
+
+      // Format the kitty data
+      const formattedKitty = {
+        ...kittyData,
+        // Mark the current user as "You"
+        members: kittyData.members.map(member => {
+          if (member.userId === currentUser.uid) {
+            return { ...member, name: "You" };
+          }
+          return member;
+        })
+      };
+
+      // Load settled transactions if they exist
+      if (kittyData.settledTransactions) {
+        setSettledTransactions(kittyData.settledTransactions);
+      }
+
+      setKitty(formattedKitty);
+    } catch (error) {
+      console.error("Error fetching kitty details:", error);
+      toast.error("Failed to load kitty details");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const handleShowConfirmation = (e) => {
-      setConfirmationData(e.detail);
-      setShowConfirmation(true);
-    };
-
     document.addEventListener('SHOW_DELETE_CONFIRMATION', handleShowConfirmation);
     
     return () => {
@@ -105,43 +143,6 @@ const KittyDetails = ({ kittyId, onBack }) => {
   }, []);
 
   useEffect(() => {
-    const fetchKitty = async () => {
-      try {
-        setLoading(true);
-        const kittyData = await getKittyById(kittyId);
-
-        if (!kittyData) {
-          toast.error("Kitty not found");
-          onBack();
-          return;
-        }
-
-        // Format the kitty data
-        const formattedKitty = {
-          ...kittyData,
-          // Mark the current user as "You"
-          members: kittyData.members.map(member => {
-            if (member.userId === currentUser.uid) {
-              return { ...member, name: "You" };
-            }
-            return member;
-          })
-        };
-
-        // Load settled transactions if they exist
-        if (kittyData.settledTransactions) {
-          setSettledTransactions(kittyData.settledTransactions);
-        }
-
-        setKitty(formattedKitty);
-      } catch (error) {
-        console.error("Error fetching kitty details:", error);
-        toast.error("Failed to load kitty details");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     if (kittyId) {
       fetchKitty();
     }
@@ -247,11 +248,24 @@ const KittyDetails = ({ kittyId, onBack }) => {
       // Create a copy of the settlements array
       const updatedSettlements = [...settledTransactions];
 
-      // Toggle the selected settlement
-      updatedSettlements[index] = {
-        ...settlement,
-        settled: !settlement.settled
-      };
+      // Check if this settlement is already in the settled transactions
+      const existingSettlementIndex = updatedSettlements.findIndex(
+        st => st.from === settlement.from && st.to === settlement.to && st.amount === settlement.amount
+      );
+
+      if (existingSettlementIndex !== -1) {
+        // Settlement exists - toggle it
+        updatedSettlements[existingSettlementIndex] = {
+          ...updatedSettlements[existingSettlementIndex],
+          settled: !updatedSettlements[existingSettlementIndex].settled
+        };
+      } else {
+        // Settlement doesn't exist - add it with settled=true
+        updatedSettlements.push({
+          ...settlement,
+          settled: true
+        });
+      }
 
       // Update the settlements in Firestore
       const { error } = await updateKittySettlement(kittyId, updatedSettlements);
@@ -264,7 +278,11 @@ const KittyDetails = ({ kittyId, onBack }) => {
       }
 
       // If marking as settled, track the settlement
-      if (!settlement.settled) {
+      const isNowSettled = existingSettlementIndex !== -1 ? 
+        updatedSettlements[existingSettlementIndex].settled : 
+        true;
+        
+      if (isNowSettled) {
         trackSettlement(kittyId, settlement.amount);
       }
 
@@ -854,7 +872,8 @@ const KittyDetails = ({ kittyId, onBack }) => {
               <div className="space-y-3">
                 {calculateSettlements().map((settlement, idx) => {
                   const isSettled = settledTransactions.some(
-                    st => st.from === settlement.from && st.to === settlement.to && st.amount === settlement.amount
+                    st => st.from === settlement.from && st.to === settlement.to && 
+                         st.amount === settlement.amount && st.settled === true
                   );
 
                   return (
@@ -978,13 +997,23 @@ const KittyDetails = ({ kittyId, onBack }) => {
 
       {/* Confirmation Alert */}
       <ConfirmationAlert
-        isOpen={showConfirmation}
-        onClose={() => setShowConfirmation(false)}
-        onConfirm={confirmationData.onConfirm}
-        title={confirmationData.title}
-        message={confirmationData.message}
-        type={confirmationData.type}
+        isOpen={showDeleteConfirmation}
+        onClose={() => setShowDeleteConfirmation(false)}
+        onConfirm={handleDeleteKitty}
+        title="Delete Kitty?"
+        message="Are you sure you want to delete this kitty? This action cannot be undone."
       />
+
+      {/* Member Delete Confirmation */}
+      {showDeleteMemberConfirmation && memberToDelete && (
+        <ConfirmationAlert
+          isOpen={showDeleteMemberConfirmation}
+          onClose={() => setShowDeleteMemberConfirmation(false)}
+          onConfirm={() => handleDeleteMember(memberToDelete)}
+          title="Remove Member?"
+          message={`Are you sure you want to remove ${memberToDelete.name} from this kitty? Their expenses will remain, but they won't be part of future expenses. This action cannot be undone.`}
+        />
+      )}
     </div>
   );
 };
