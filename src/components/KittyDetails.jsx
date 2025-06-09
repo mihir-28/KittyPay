@@ -524,7 +524,7 @@ const KittyDetails = ({ kittyId, onBack }) => {
   const isOwner = kitty.members.find(m => m.userId === currentUser.uid)?.isOwner;
   
   return (
-    <div className="w-full mx-auto max-w-7xl px-3 sm:px-6 py-4">
+    <div className="w-full mx-auto max-w-8xl px-3 sm:px-6 py-4">
       <div className="flex justify-between items-center mb-6">
         <button
           onClick={onBack}
@@ -719,9 +719,10 @@ const KittyDetails = ({ kittyId, onBack }) => {
                         <th className="py-3 px-4 text-left">Description</th>
                         <th className="py-3 px-4 text-left">Category</th>
                         <th className="py-3 px-4 text-left">Paid By</th>
-                        <th className="py-3 px-4 text-right">Amount</th>
-                        <th className="py-3 px-4 text-right">Date</th>
-                        <th className="py-3 px-4 text-center">Action</th>
+                        <th className="py-3 px-4 text-left">Shared With</th>
+                        <th className="py-3 px-4 text-left">Amount</th>
+                        <th className="py-3 px-4 text-left">Date</th>
+                        <th className="py-3 px-4 text-left">Action</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -755,6 +756,18 @@ const KittyDetails = ({ kittyId, onBack }) => {
                             )}
                           </td>
                           <td className="py-3 px-4">{expense.paidBy}</td>
+                          <td className="py-3 px-4">
+                            {expense.participants ? (
+                              <span className="text-sm">
+                                {expense.participants.length === kitty.members.length ? 
+                                  "Everyone" : 
+                                  expense.participants.map(p => p.name).join(", ")
+                                }
+                              </span>
+                            ) : (
+                              <span className="text-sm">Everyone</span>
+                            )}
+                          </td>
                           <td className="py-3 px-4 text-right font-medium">{kitty.currency || '$'}{expense.amount.toFixed(2)}</td>
                           <td className="py-3 px-4 text-right text-[var(--text-secondary)]">
                             {expense.createdAt ? new Date(expense.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}
