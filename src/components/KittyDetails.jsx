@@ -879,7 +879,7 @@ const KittyDetails = ({ kittyId, onBack }) => {
                   return (
                     <div
                       key={idx}
-                      className={`flex flex-col sm:flex-row justify-between items-center p-3 rounded-md ${isSettled
+                      className={`flex flex-col sm:flex-row sm:items-center p-3 rounded-md ${isSettled
                         ? 'bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-900/30'
                         : 'bg-[var(--surface)] border border-[var(--border)]'
                         } shadow-sm`}
@@ -911,46 +911,59 @@ const KittyDetails = ({ kittyId, onBack }) => {
                           {isSettled ? 'Settled' : 'Mark settled'}
                         </button>
                       </div>
-
-                      {/* Desktop layout (horizontal) */}
-                      <div className="hidden sm:flex items-center space-x-2">
-                        <div className="w-7 h-7 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center text-red-600 dark:text-red-400">
-                          <span className="text-sm font-semibold">-</span>
+  
+                      {/* Desktop layout (horizontal) - equally spaced 4-column grid */}
+                      <div className="hidden sm:grid sm:grid-cols-4 w-full gap-2">
+                        {/* Column 1: Payer */}
+                        <div className="flex items-center space-x-2">
+                          <div className="w-7 h-7 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center text-red-600 dark:text-red-400 flex-shrink-0">
+                            <span className="text-sm font-semibold">-</span>
+                          </div>
+                          <div className="min-w-0">
+                            <span className="font-medium truncate block">{settlement.from}</span>
+                            <div className="text-xs text-[var(--text-secondary)]">should pay</div>
+                          </div>
                         </div>
-                        <div>
-                          <span className="font-medium">{settlement.from}</span>
-                          <div className="text-xs text-[var(--text-secondary)]">should pay</div>
+                        
+                        {/* Column 2: Amount */}
+                        <div className="flex justify-center items-center">
+                          <div className="flex flex-col items-center flex-shrink-0">
+                            <div className="text-lg font-bold">{kitty.currency || '$'}{settlement.amount.toFixed(2)}</div>
+                            <div className="text-xs text-[var(--text-secondary)]">to</div>
+                          </div>
+                        </div>
+                        
+                        {/* Column 3: Receiver */}
+                        <div className="flex items-center space-x-2">
+                          <div className="min-w-0">
+                            <span className="font-medium truncate block">{settlement.to}</span>
+                            <div className="text-xs text-[var(--text-secondary)]">will receive</div>
+                          </div>
+                          <div className="w-7 h-7 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center text-green-600 dark:text-green-400 flex-shrink-0">
+                            <span className="text-sm font-semibold">+</span>
+                          </div>
+                        </div>
+                        
+                        {/* Column 4: Action Button */}
+                        <div className="flex justify-end items-center">
+                          <button
+                            onClick={() => handleSettlementToggle(settlement, idx)}
+                            className={`flex items-center px-3 py-1.5 rounded-full text-sm font-medium ${isSettled
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+                              : 'bg-[var(--background)] text-[var(--text-secondary)] hover:bg-[var(--border)]'
+                              }`}
+                          >
+                            {isSettled ? (
+                              <>
+                                <FiCheck className="mr-1.5" size={14} />
+                                Settled
+                              </>
+                            ) : (
+                              'Mark settled'
+                            )}
+                          </button>
                         </div>
                       </div>
-                      <div className="hidden sm:flex flex-col items-center px-2">
-                        <div className="text-lg font-bold">{kitty.currency || '$'}{settlement.amount.toFixed(2)}</div>
-                        <div className="text-xs text-[var(--text-secondary)]">to</div>
-                      </div>
-                      <div className="hidden sm:flex items-center space-x-2">
-                        <div>
-                          <span className="font-medium">{settlement.to}</span>
-                          <div className="text-xs text-[var(--text-secondary)]">will receive</div>
-                        </div>
-                        <div className="w-7 h-7 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center text-green-600 dark:text-green-400">
-                          <span className="text-sm font-semibold">+</span>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => handleSettlementToggle(settlement, idx)}
-                        className={`hidden sm:flex items-center px-3 py-1.5 rounded-full text-sm font-medium ${isSettled
-                          ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
-                          : 'bg-[var(--background)] text-[var(--text-secondary)] hover:bg-[var(--border)]'
-                          }`}
-                      >
-                        {isSettled ? (
-                          <>
-                            <FiCheck className="mr-1.5" size={14} />
-                            Settled
-                          </>
-                        ) : (
-                          'Mark settled'
-                        )}
-                      </button>
                     </div>
                   );
                 })}
