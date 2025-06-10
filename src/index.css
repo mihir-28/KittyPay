@@ -51,6 +51,7 @@
   --surface: #FFFFFF;
   --text-primary: #212529;
   --text-secondary: #495057;
+  --text-tertiary: #ffffff;
   --success: #06D6A0;
   --error: #FF6B6B;
   
@@ -67,6 +68,7 @@ html.dark-theme {
   --surface: #1E1E1E;
   --text-primary: #E0E0E0;
   --text-secondary: #B0B0B0;
+  --text-tertiary: #ffffff;
   --success: #06D6A0;
   --error: #FF6B6B;
 }

@@ -16,6 +16,7 @@ import Contact from "./pages/Contact";
 import Profile from "./pages/Profile";
 import Kitties from "./pages/Kitties";
 import Dashboard from "./pages/Dashboard";
+import Roadmap from "./pages/Roadmap";
 import EmailLinkHandler from "./components/EmailLinkHandler";
 import Layout from "./layouts/MainLayout";
 
@@ -56,6 +57,7 @@ function App() {
             <Route path="/terms-of-use" element={<Terms />} />
             <Route path="/privacy-policy" element={<Policy />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/roadmap" element={<Roadmap />} />
             
             {/* Auth routes - redirect to profile if already logged in */}
             <Route 
