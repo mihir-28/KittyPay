@@ -1,11 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { FaRocket, FaLightbulb, FaCode, FaMobile, FaGithub, FaSpinner, FaBug, FaStar, FaFilter } from 'react-icons/fa';
 import ReactMarkdown from 'react-markdown';
 import { fetchIssues, getIssueStatus, getIssueCategory } from '../services/github';
 import { toast } from 'react-hot-toast';
+import { useLocation } from 'react-router-dom';
 
 const Roadmap = () => {
+  const location = useLocation();
+  const hasScrolled = useRef(false);
   const [issues, setIssues] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -13,9 +16,42 @@ const Roadmap = () => {
   const [issueState, setIssueState] = useState('open'); // 'open' or 'closed'
   const [expandedIssues, setExpandedIssues] = useState(new Set());
 
+  // Scroll to top when location changes (including refreshes)
+  useEffect(() => {
+    if (location.pathname === '/roadmap' && !hasScrolled.current) {
+      // Reset the ref when component unmounts
+      return () => {
+        hasScrolled.current = false;
+      };
+    }
+  }, [location]);
+
+  // Separate effect for initial scroll
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!hasScrolled.current) {
+        window.scrollTo(0, 0);
+        hasScrolled.current = true;
+      }
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Handle tab changes
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  };
+
+  const handleStateChange = (state) => {
+    setIssueState(state);
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  };
+
   useEffect(() => {
     fetchIssuesData();
-  }, [issueState]); // Refetch when issueState changes
+  }, [issueState]);
 
   const fetchIssuesData = async () => {
     try {
@@ -114,7 +150,7 @@ const Roadmap = () => {
               </ul>
             </div>
           </div>
-          <button 
+          <button
             onClick={() => window.location.reload()}
             className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
           >
@@ -141,22 +177,20 @@ const Roadmap = () => {
           {/* Issue State Tabs */}
           <div className="flex gap-4 mb-4">
             <button
-              onClick={() => setIssueState('open')}
-              className={`px-6 py-2 rounded-lg transition-colors ${
-                issueState === 'open'
+              onClick={() => handleStateChange('open')}
+              className={`px-6 py-2 rounded-lg transition-colors ${issueState === 'open'
                   ? 'bg-[var(--primary)] text-white'
                   : 'bg-[var(--surface)] text-[var(--text-primary)] hover:bg-opacity-80'
-              }`}
+                }`}
             >
               Open Issues
             </button>
             <button
-              onClick={() => setIssueState('closed')}
-              className={`px-6 py-2 rounded-lg transition-colors ${
-                issueState === 'closed'
+              onClick={() => handleStateChange('closed')}
+              className={`px-6 py-2 rounded-lg transition-colors ${issueState === 'closed'
                   ? 'bg-[var(--primary)] text-white'
                   : 'bg-[var(--surface)] text-[var(--text-primary)] hover:bg-opacity-80'
-              }`}
+                }`}
             >
               Closed Issues
             </button>
@@ -165,34 +199,31 @@ const Roadmap = () => {
           {/* Category Tabs */}
           <div className="flex gap-4">
             <button
-              onClick={() => setActiveTab('feature')}
-              className={`px-6 py-2 rounded-lg transition-colors ${
-                activeTab === 'feature'
+              onClick={() => handleTabChange('feature')}
+              className={`px-6 py-2 rounded-lg transition-colors ${activeTab === 'feature'
                   ? 'bg-[var(--primary)] text-white'
                   : 'bg-[var(--surface)] text-[var(--text-primary)] hover:bg-opacity-80'
-              }`}
+                }`}
             >
               <FaStar className="inline-block mr-2" />
               New Features
             </button>
             <button
-              onClick={() => setActiveTab('enhancement')}
-              className={`px-6 py-2 rounded-lg transition-colors ${
-                activeTab === 'enhancement'
+              onClick={() => handleTabChange('enhancement')}
+              className={`px-6 py-2 rounded-lg transition-colors ${activeTab === 'enhancement'
                   ? 'bg-[var(--primary)] text-white'
                   : 'bg-[var(--surface)] text-[var(--text-primary)] hover:bg-opacity-80'
-              }`}
+                }`}
             >
               <FaLightbulb className="inline-block mr-2" />
               Enhancements
             </button>
             <button
-              onClick={() => setActiveTab('issues')}
-              className={`px-6 py-2 rounded-lg transition-colors ${
-                activeTab === 'issues'
+              onClick={() => handleTabChange('issues')}
+              className={`px-6 py-2 rounded-lg transition-colors ${activeTab === 'issues'
                   ? 'bg-[var(--primary)] text-white'
                   : 'bg-[var(--surface)] text-[var(--text-primary)] hover:bg-opacity-80'
-              }`}
+                }`}
             >
               <FaBug className="inline-block mr-2" />
               Issues
@@ -205,7 +236,7 @@ const Roadmap = () => {
           {filteredIssues.map((issue, index) => {
             const status = getIssueStatus(issue);
             const category = getIssueCategory(issue);
-            
+
             return (
               <motion.div
                 key={issue.id}
@@ -223,11 +254,10 @@ const Roadmap = () => {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
                           <span className="text-sm text-[var(--text-secondary)]">#{issue.number}</span>
-                          <span className={`px-2 py-1 text-xs rounded-full ${
-                            issue.state === 'open' ? 'bg-green-500/20 text-green-500' :
-                            issue.state === 'closed' ? 'bg-purple-500/20 text-purple-500' :
-                            'bg-blue-500/20 text-blue-500'
-                          }`}>
+                          <span className={`px-2 py-1 text-xs rounded-full ${issue.state === 'open' ? 'bg-green-500/20 text-green-500' :
+                              issue.state === 'closed' ? 'bg-purple-500/20 text-purple-500' :
+                                'bg-blue-500/20 text-blue-500'
+                            }`}>
                             {issue.state}
                           </span>
                         </div>
@@ -262,8 +292,8 @@ const Roadmap = () => {
                           </span>
                           {issue.assignee && (
                             <span className="flex items-center gap-1">
-                              <img 
-                                src={issue.assignee.avatarUrl} 
+                              <img
+                                src={issue.assignee.avatarUrl}
                                 alt={issue.assignee.login}
                                 className="w-4 h-4 rounded-full"
                               />
@@ -285,22 +315,22 @@ const Roadmap = () => {
           <div className="text-center py-12">
             <div className="bg-[var(--surface)] rounded-lg p-8 border border-[var(--text-secondary)]">
               <h3 className="text-lg font-medium text-[var(--text-primary)] mb-2">
-                {issueState === 'open' 
+                {issueState === 'open'
                   ? activeTab === 'feature' ? 'No Planned Features' :
                     activeTab === 'enhancement' ? 'No Planned Enhancements' :
-                    'No Active Issues'
+                      'No Active Issues'
                   : activeTab === 'feature' ? 'No Completed Features' :
                     activeTab === 'enhancement' ? 'No Completed Enhancements' :
-                    'No Resolved Issues'}
+                      'No Resolved Issues'}
               </h3>
               <p className="text-[var(--text-primary)]">
-                {issueState === 'open' 
+                {issueState === 'open'
                   ? activeTab === 'feature' ? 'We haven\'t planned any new features yet. Stay tuned for updates!' :
                     activeTab === 'enhancement' ? 'No enhancements are currently in the pipeline. Check back later!' :
-                    'All systems are running smoothly with no active issues.'
+                      'All systems are running smoothly with no active issues.'
                   : activeTab === 'feature' ? 'We\'re just getting started! No features have been completed yet.' :
                     activeTab === 'enhancement' ? 'Our enhancement journey is just beginning. Watch this space!' :
-                    'No issues have been resolved yet. We\'re working on it!'}
+                      'No issues have been resolved yet. We\'re working on it!'}
               </p>
             </div>
           </div>
