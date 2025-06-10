@@ -61,7 +61,7 @@
 }
 
 /* Manual theme toggle */
-html.dark-theme {
+html.dark {
   --primary: #EF476F;
   --accent: #FFD166;
   --background: #121212;

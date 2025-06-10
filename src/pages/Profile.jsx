@@ -231,11 +231,11 @@ const Profile = () => {
     setIsDark(newIsDark);
 
     if (newIsDark) {
-      document.documentElement.classList.add('dark-theme');
+      document.documentElement.classList.add('dark');
       localStorage.setItem('theme-preference', 'dark');
       localStorage.setItem('theme', 'dark'); // Also set the navbar's theme key
     } else {
-      document.documentElement.classList.remove('dark-theme');
+      document.documentElement.classList.remove('dark');
       localStorage.setItem('theme-preference', 'light');
       localStorage.setItem('theme', 'light'); // Also set the navbar's theme key
     }

@@ -162,25 +162,25 @@ const Roadmap = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--background)] py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-[var(--background)] py-12 px-4 sm:px-6 lg:px-8 relative">
+      <div className="max-w-7xl mx-auto relative z-10">
         {/* Header */}
         <div className="text-center">
           <h1 className="text-4xl font-bold text-[var(--text-primary)] mb-4">KittyPay Roadmap</h1>
-          <p className="text-xl text-[var(--text-primary)] mb-6">
+          <p className="text-xl text-[var(--text-primary)] mb-8 max-w-2xl mx-auto">
             Discover what's coming next to KittyPay
           </p>
         </div>
 
         {/* Tabs */}
-        <div className="flex flex-col items-center gap-4 mb-8">
+        <div className="flex flex-col items-center gap-4 mb-12 p-6 rounded-xl bg-[var(--surface)]/20 border border-[var(--text-secondary)]/10">
           {/* Issue State Tabs */}
           <div className="flex gap-4 mb-4">
             <button
               onClick={() => handleStateChange('open')}
               className={`px-6 py-2 rounded-lg transition-colors ${issueState === 'open'
-                  ? 'bg-[var(--primary)] text-white'
-                  : 'bg-[var(--surface)] text-[var(--text-primary)] hover:bg-opacity-80'
+                ? 'bg-[var(--primary)] text-white'
+                : 'bg-[var(--surface)] text-[var(--text-primary)] hover:bg-opacity-90'
                 }`}
             >
               Open Issues
@@ -188,8 +188,8 @@ const Roadmap = () => {
             <button
               onClick={() => handleStateChange('closed')}
               className={`px-6 py-2 rounded-lg transition-colors ${issueState === 'closed'
-                  ? 'bg-[var(--primary)] text-white'
-                  : 'bg-[var(--surface)] text-[var(--text-primary)] hover:bg-opacity-80'
+                ? 'bg-[var(--primary)] text-white'
+                : 'bg-[var(--surface)] text-[var(--text-primary)] hover:bg-opacity-90'
                 }`}
             >
               Closed Issues
@@ -201,32 +201,38 @@ const Roadmap = () => {
             <button
               onClick={() => handleTabChange('feature')}
               className={`px-6 py-2 rounded-lg transition-colors ${activeTab === 'feature'
-                  ? 'bg-[var(--primary)] text-white'
-                  : 'bg-[var(--surface)] text-[var(--text-primary)] hover:bg-opacity-80'
+                ? 'bg-[var(--primary)] text-white'
+                : 'bg-[var(--surface)] text-[var(--text-primary)] hover:bg-opacity-90'
                 }`}
             >
-              <FaStar className="inline-block mr-2" />
-              New Features
+              <div className="flex flex-col items-center sm:flex-row">
+                <FaStar className="mb-1 sm:mb-0 sm:mr-2" />
+                <span>Features</span>
+              </div>
             </button>
             <button
               onClick={() => handleTabChange('enhancement')}
               className={`px-6 py-2 rounded-lg transition-colors ${activeTab === 'enhancement'
-                  ? 'bg-[var(--primary)] text-white'
-                  : 'bg-[var(--surface)] text-[var(--text-primary)] hover:bg-opacity-80'
+                ? 'bg-[var(--primary)] text-white'
+                : 'bg-[var(--surface)] text-[var(--text-primary)] hover:bg-opacity-90'
                 }`}
             >
-              <FaLightbulb className="inline-block mr-2" />
-              Enhancements
+              <div className="flex flex-col items-center sm:flex-row">
+                <FaLightbulb className="mb-1 sm:mb-0 sm:mr-2" />
+                <span>Enhancements</span>
+              </div>
             </button>
             <button
               onClick={() => handleTabChange('issues')}
               className={`px-6 py-2 rounded-lg transition-colors ${activeTab === 'issues'
-                  ? 'bg-[var(--primary)] text-white'
-                  : 'bg-[var(--surface)] text-[var(--text-primary)] hover:bg-opacity-80'
+                ? 'bg-[var(--primary)] text-white'
+                : 'bg-[var(--surface)] text-[var(--text-primary)] hover:bg-opacity-90'
                 }`}
             >
-              <FaBug className="inline-block mr-2" />
-              Issues
+              <div className="flex flex-col items-center sm:flex-row">
+                <FaBug className="mb-1 sm:mb-0 sm:mr-2" />
+                <span>Issues</span>
+              </div>
             </button>
           </div>
         </div>
@@ -255,8 +261,8 @@ const Roadmap = () => {
                         <div className="flex items-center gap-2 mb-2">
                           <span className="text-sm text-[var(--text-secondary)]">#{issue.number}</span>
                           <span className={`px-2 py-1 text-xs rounded-full ${issue.state === 'open' ? 'bg-green-500/20 text-green-500' :
-                              issue.state === 'closed' ? 'bg-purple-500/20 text-purple-500' :
-                                'bg-blue-500/20 text-blue-500'
+                            issue.state === 'closed' ? 'bg-purple-500/20 text-purple-500' :
+                              'bg-blue-500/20 text-blue-500'
                             }`}>
                             {issue.state}
                           </span>
@@ -346,4 +352,4 @@ const Roadmap = () => {
   );
 };
 
-export default Roadmap; 
+export default Roadmap;

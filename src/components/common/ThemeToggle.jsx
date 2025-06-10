@@ -64,9 +64,9 @@ const ThemeToggle = ({ className = '', size = 'md' }) => {
   const applyTheme = (isDark) => {
     // Update HTML class for theme
     if (isDark) {
-      document.documentElement.classList.add('dark-theme');
+      document.documentElement.classList.add('dark');
     } else {
-      document.documentElement.classList.remove('dark-theme');
+      document.documentElement.classList.remove('dark');
     }
 
     // Force a re-render of the entire page to update all components

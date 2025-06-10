@@ -15,7 +15,7 @@ const Navbar = () => {
 
     if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
       setIsDark(true);
-      document.documentElement.classList.add('dark-theme');
+      document.documentElement.classList.add('dark');
     }
     
     // Listen for theme changes from other components
@@ -33,11 +33,11 @@ const Navbar = () => {
     const newIsDark = !isDark;
     
     if (isDark) {
-      document.documentElement.classList.remove('dark-theme');
+      document.documentElement.classList.remove('dark');
       localStorage.setItem('theme', 'light');
       localStorage.setItem('theme-preference', 'light'); // Also set theme-preference for consistency
     } else {
-      document.documentElement.classList.add('dark-theme');
+      document.documentElement.classList.add('dark');
       localStorage.setItem('theme', 'dark');
       localStorage.setItem('theme-preference', 'dark'); // Also set theme-preference for consistency
     }

@@ -10,7 +10,7 @@ import { useNavigate } from "react-router-dom";
 // Custom confirmation alert component
 const ConfirmationAlert = ({ isOpen, onClose, onConfirm, title, message, confirmText = "Delete", cancelText = "Cancel", type = "danger" }) => {
   if (!isOpen) return null;
-  
+
   const getTypeStyles = () => {
     switch (type) {
       case 'danger':
@@ -33,9 +33,9 @@ const ConfirmationAlert = ({ isOpen, onClose, onConfirm, title, message, confirm
         };
     }
   };
-  
+
   const typeStyles = getTypeStyles();
-  
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
       <motion.div
@@ -49,9 +49,9 @@ const ConfirmationAlert = ({ isOpen, onClose, onConfirm, title, message, confirm
             {typeStyles.icon}
             <h3 className="text-xl font-bold ml-3">{title}</h3>
           </div>
-          
+
           <p className="mb-6 text-[var(--text-secondary)]">{message}</p>
-          
+
           <div className="flex justify-end gap-3">
             <button
               onClick={onClose}
@@ -136,7 +136,7 @@ const KittyDetails = ({ kittyId, onBack }) => {
 
   useEffect(() => {
     document.addEventListener('SHOW_DELETE_CONFIRMATION', handleShowConfirmation);
-    
+
     return () => {
       document.removeEventListener('SHOW_DELETE_CONFIRMATION', handleShowConfirmation);
     };
@@ -278,10 +278,10 @@ const KittyDetails = ({ kittyId, onBack }) => {
       }
 
       // If marking as settled, track the settlement
-      const isNowSettled = existingSettlementIndex !== -1 ? 
-        updatedSettlements[existingSettlementIndex].settled : 
+      const isNowSettled = existingSettlementIndex !== -1 ?
+        updatedSettlements[existingSettlementIndex].settled :
         true;
-        
+
       if (isNowSettled) {
         trackSettlement(kittyId, settlement.amount);
       }
@@ -492,13 +492,13 @@ const KittyDetails = ({ kittyId, onBack }) => {
           try {
             const loadingToast = toast.loading("Deleting kitty...");
             const result = await deleteKitty(kittyId, currentUser.uid);
-            
+
             if (result.error) {
               toast.dismiss(loadingToast);
               toast.error(result.error);
               return;
             }
-            
+
             toast.dismiss(loadingToast);
             toast.success("Kitty deleted successfully");
             // Pass deleted kitty ID back to parent
@@ -520,9 +520,9 @@ const KittyDetails = ({ kittyId, onBack }) => {
       </div>
     );
   } if (!kitty) return null;
-  
+
   const isOwner = kitty.members.find(m => m.userId === currentUser.uid)?.isOwner;
-  
+
   return (
     <div className="w-full mx-auto max-w-8xl px-3 sm:px-6 py-4">
       <div className="flex justify-between items-center mb-6">
@@ -532,7 +532,7 @@ const KittyDetails = ({ kittyId, onBack }) => {
         >
           <FiArrowLeft className="mr-2" /> Back to Kitties
         </button>
-        
+
         {isOwner && (
           <button
             onClick={handleDeleteKitty}
@@ -619,8 +619,8 @@ const KittyDetails = ({ kittyId, onBack }) => {
               <div
                 key={idx}
                 className={`p-4 mb-4 rounded-lg ${balance.owes > 0 ? 'bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800/30' :
-                    balance.owes < 0 ? 'bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800/30' :
-                      'bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800/30'
+                  balance.owes < 0 ? 'bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800/30' :
+                    'bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800/30'
                   }`}
               >
                 <div className="flex items-center justify-between mb-3">
@@ -759,8 +759,8 @@ const KittyDetails = ({ kittyId, onBack }) => {
                           <td className="py-3 px-4">
                             {expense.participants ? (
                               <span className="text-sm">
-                                {expense.participants.length === kitty.members.length ? 
-                                  "Everyone" : 
+                                {expense.participants.length === kitty.members.length ?
+                                  "Everyone" :
                                   expense.participants.map(p => p.name).join(", ")
                                 }
                               </span>
@@ -885,8 +885,8 @@ const KittyDetails = ({ kittyId, onBack }) => {
               <div className="space-y-3">
                 {calculateSettlements().map((settlement, idx) => {
                   const isSettled = settledTransactions.some(
-                    st => st.from === settlement.from && st.to === settlement.to && 
-                         st.amount === settlement.amount && st.settled === true
+                    st => st.from === settlement.from && st.to === settlement.to &&
+                      st.amount === settlement.amount && st.settled === true
                   );
 
                   return (
@@ -900,7 +900,7 @@ const KittyDetails = ({ kittyId, onBack }) => {
                       {/* Mobile layout (stacked) */}
                       <div className="flex w-full justify-between items-center sm:hidden">
                         <div className="flex items-center">
-                          <div className="w-7 h-7 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center text-red-600 dark:text-red-400 mr-2">
+                          <div className="w-7 h-7 bg-red-500 text-white dark:bg-red-900/20 dark:text-red-400 rounded-full flex items-center justify-center mr-2">
                             <span className="text-sm font-semibold">-</span>
                           </div>
                           <span className="font-medium">{settlement.from}</span>
@@ -909,7 +909,7 @@ const KittyDetails = ({ kittyId, onBack }) => {
                       </div>
                       <div className="flex w-full justify-between items-center mt-2 sm:hidden">
                         <div className="flex items-center">
-                          <div className="w-7 h-7 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center text-green-600 dark:text-green-400 mr-2">
+                          <div className="w-7 h-7 bg-green-500 text-white dark:bg-green-900/20 dark:text-green-400 rounded-full flex items-center justify-center mr-2">
                             <span className="text-sm font-semibold">+</span>
                           </div>
                           <span className="font-medium">{settlement.to}</span>
@@ -917,19 +917,19 @@ const KittyDetails = ({ kittyId, onBack }) => {
                         <button
                           onClick={() => handleSettlementToggle(settlement, idx)}
                           className={`px-3 py-1 rounded-full text-xs font-medium ${isSettled
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+                            ? 'bg-green-500 text-white dark:bg-green-900/20 dark:text-green-400'
                             : 'bg-[var(--background)] text-[var(--text-secondary)]'
                             }`}
                         >
                           {isSettled ? 'Settled' : 'Mark settled'}
                         </button>
                       </div>
-  
+
                       {/* Desktop layout (horizontal) - equally spaced 4-column grid */}
                       <div className="hidden sm:grid sm:grid-cols-4 w-full gap-2">
                         {/* Column 1: Payer */}
                         <div className="flex items-center space-x-2">
-                          <div className="w-7 h-7 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center text-red-600 dark:text-red-400 flex-shrink-0">
+                          <div className="w-7 h-7 bg-red-500 text-white dark:bg-red-900/20 dark:text-red-400 rounded-full flex items-center justify-center flex-shrink-0">
                             <span className="text-sm font-semibold">-</span>
                           </div>
                           <div className="min-w-0">
@@ -937,7 +937,7 @@ const KittyDetails = ({ kittyId, onBack }) => {
                             <div className="text-xs text-[var(--text-secondary)]">should pay</div>
                           </div>
                         </div>
-                        
+
                         {/* Column 2: Amount */}
                         <div className="flex justify-center items-center">
                           <div className="flex flex-col items-center flex-shrink-0">
@@ -945,24 +945,24 @@ const KittyDetails = ({ kittyId, onBack }) => {
                             <div className="text-xs text-[var(--text-secondary)]">to</div>
                           </div>
                         </div>
-                        
+
                         {/* Column 3: Receiver */}
                         <div className="flex items-center space-x-2">
                           <div className="min-w-0">
                             <span className="font-medium truncate block">{settlement.to}</span>
                             <div className="text-xs text-[var(--text-secondary)]">will receive</div>
                           </div>
-                          <div className="w-7 h-7 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center text-green-600 dark:text-green-400 flex-shrink-0">
+                          <div className="w-7 h-7 bg-green-500 text-white dark:bg-green-900/20 dark:text-green-400 rounded-full flex items-center justify-center flex-shrink-0">
                             <span className="text-sm font-semibold">+</span>
                           </div>
                         </div>
-                        
+
                         {/* Column 4: Action Button */}
                         <div className="flex justify-end items-center">
                           <button
                             onClick={() => handleSettlementToggle(settlement, idx)}
                             className={`flex items-center px-3 py-1.5 rounded-full text-sm font-medium ${isSettled
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+                              ? 'bg-green-500 text-white dark:bg-green-900/20 dark:text-green-400'
                               : 'bg-[var(--background)] text-[var(--text-secondary)] hover:bg-[var(--border)]'
                               }`}
                           >
