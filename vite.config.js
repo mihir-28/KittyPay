@@ -15,8 +15,8 @@ export default defineConfig({
         name: 'KittyPay - The Modern Desi Way to Split Expenses',
         short_name: 'KittyPay',
         description: 'A sleek and smart expense-splitting app for groups of friends, flatmates, and families.',
-        theme_color: '#5271FF',
-        background_color: '#ffffff',
+        theme_color: '#121212',
+        background_color: '#121212',
         display: 'standalone',
         icons: [
           {
