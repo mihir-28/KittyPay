@@ -9,50 +9,55 @@ export default defineConfig({
     react(), 
     tailwindcss(),
     VitePWA({
-      registerType: 'prompt',
+      registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'logo.svg', 'logo.png'],
       manifest: {
-        name: 'KittyPay - The Modern Desi Way to Split Expenses',
-        short_name: 'KittyPay',
-        description: 'A sleek and smart expense-splitting app for groups of friends, flatmates, and families.',
-        theme_color: '#121212',
-        background_color: '#121212',
-        display: 'standalone',
+        name: "KittyPay - The Modern Desi Way to Split Expenses",
+        short_name: "KittyPay",
+        description: "A sleek and smart expense-splitting app for groups of friends, flatmates, and families.",
+        theme_color: "#121212",
+        background_color: "#121212",
+        display: "standalone",
+        start_url: "/",
         icons: [
           {
-            "src": "/icons/manifest-icon-192.maskable.png",
-            "sizes": "192x192",
-            "type": "image/png",
-            "purpose": "any"
+            src: "/icons/manifest-icon-192.maskable.png",
+            sizes: "192x192",
+            type: "image/png",
+            purpose: "any"
           },
           {
-            "src": "/icons/manifest-icon-192.maskable.png",
-            "sizes": "192x192",
-            "type": "image/png",
-            "purpose": "maskable"
+            src: "/icons/manifest-icon-192.maskable.png",
+            sizes: "192x192",
+            type: "image/png",
+            purpose: "maskable"
           },
           {
-            "src": "/icons/manifest-icon-512.maskable.png",
-            "sizes": "512x512",
-            "type": "image/png",
-            "purpose": "any"
+            src: "/icons/manifest-icon-512.maskable.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "any"
           },
           {
-            "src": "/icons/manifest-icon-512.maskable.png",
-            "sizes": "512x512",
-            "type": "image/png",
-            "purpose": "maskable"
+            src: "/icons/manifest-icon-512.maskable.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "maskable"
           }
         ]
       },
       devOptions: {
         enabled: true,
-        /* when using generateSW the PWA plugin will switch to classic */
         type: 'module',
         navigateFallback: 'index.html',
       },
+      // Fix glob patterns for workbox
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,jpeg,ttf,woff,woff2}'],
+        // Use a simpler glob pattern that matches your files
+        globPatterns: ["**/*.{js,css,html,png,svg,jpg,ico,json}"],
+        // Don't ignore node_modules that might contain assets
+        globIgnores: ["**/node_modules/**/*.{js,css}", "sw.js", "workbox-*.js"],
+        // Add additional configuration
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -61,7 +66,7 @@ export default defineConfig({
               cacheName: 'google-fonts-cache',
               expiration: {
                 maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // <== 365 days
+                maxAgeSeconds: 60 * 60 * 24 * 365
               },
               cacheableResponse: {
                 statuses: [0, 200]
@@ -75,11 +80,11 @@ export default defineConfig({
               cacheName: 'gstatic-fonts-cache',
               expiration: {
                 maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // <== 365 days
+                maxAgeSeconds: 60 * 60 * 24 * 365
               },
               cacheableResponse: {
                 statuses: [0, 200]
-              },
+              }
             }
           }
         ]

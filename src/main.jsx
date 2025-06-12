@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import './index.css'
 import App from './App.jsx'
+import { registerSW } from 'virtual:pwa-register';
 
 // Import PWA test utilities in development
 if (import.meta.env.DEV) {
@@ -12,33 +13,46 @@ if (import.meta.env.DEV) {
   });
 }
 
-// Register the fallback service worker if needed
-const registerFallbackServiceWorker = () => {
+// Debug function to check PWA installability
+window.checkPWAInstallability = () => {
+  console.log('PWA Installability Check:');
+  console.log('- iOS standalone:', navigator.standalone);
+  console.log('- Display-mode standalone:', window.matchMedia('(display-mode: standalone)').matches);
+  console.log('- Service worker support:', 'serviceWorker' in navigator);
+  
   if ('serviceWorker' in navigator) {
-    // Check if vite-plugin-pwa registered a service worker
     navigator.serviceWorker.getRegistrations().then(registrations => {
-      if (registrations.length === 0) {
-        // No service worker, register our fallback
-        console.log('No service worker found, registering fallback...');
-        navigator.serviceWorker.register('/sw.js')
-          .then(reg => {
-            console.log('Fallback Service worker registered successfully:', reg.scope);
-          })
-          .catch(error => {
-            console.log('Fallback Service worker registration failed:', error);
-          });
-      } else {
-        console.log('Service worker already registered:', registrations);
-      }
+      console.log('- Service worker registrations:', registrations.length);
     });
+  }
+  
+  // Check if manifest exists
+  const manifestLink = document.querySelector('link[rel="manifest"]');
+  console.log('- Manifest link exists:', !!manifestLink);
+  if (manifestLink) {
+    console.log('- Manifest href:', manifestLink.href);
   }
 };
 
-// Wait for the window to load before checking service worker
-window.addEventListener('load', () => {
-  // Wait a bit to allow vite-plugin-pwa to register its service worker first
-  setTimeout(registerFallbackServiceWorker, 1000);
-});
+// Make this function available to the browser console
+if (import.meta.env.DEV) {
+  window.checkPWAInstallability = window.checkPWAInstallability;
+}
+
+if ('serviceWorker' in navigator) {
+  // Register service worker
+  const updateSW = registerSW({
+    onNeedRefresh() {
+      console.log('New content available, click on reload button to update.');
+    },
+    onOfflineReady() {
+      console.log('App ready to work offline');
+    },
+  });
+  
+  // Make updateSW available globally for debugging
+  window.updateSW = updateSW;
+}
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
