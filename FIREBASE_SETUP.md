@@ -1,4 +1,4 @@
-# Firebase Setup for KittyPay v1.7
+# Firebase Setup for KittyPay v1.8
 
 ## 🔧 Setting up Firebase
 
