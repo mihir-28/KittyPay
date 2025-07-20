@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { registerSW } from 'virtual:pwa-register'
-import { useNavigate } from 'react-router-dom'
 
 const PWAInstallPrompt = () => {
   const [offlineReady, setOfflineReady] = useState(false)
@@ -10,7 +9,6 @@ const PWAInstallPrompt = () => {
   const [showInitialNotification, setShowInitialNotification] = useState(false)
   const [showDesktopPrompt, setShowDesktopPrompt] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
-  const navigate = useNavigate()
   
   // Check if the device is mobile
   const checkMobile = () => {
@@ -25,10 +23,10 @@ const PWAInstallPrompt = () => {
   }
   
   // Check if user has already installed the app or dismissed the notification
-  const checkInstallState = () => {
+  const checkInstallState = useCallback(() => {
     return isPWAInstalled() || 
            sessionStorage.getItem('pwa_dismissed') === 'true'
-  }
+  }, [])
   
   // Mark app as installed
   const markAsInstalled = () => {
@@ -117,7 +115,7 @@ const PWAInstallPrompt = () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
       window.removeEventListener('appinstalled', handleAppInstalled)
     }
-  }, [])
+  }, [checkInstallState])
 
   const close = () => {
     setOfflineReady(false)
@@ -187,22 +185,22 @@ const PWAInstallPrompt = () => {
       showManualInstructions();
     }
   }
-  
-  const goToProfile = () => {
-    close()
-    navigate('/profile')
-  }
 
   return (
     <>
       {/* Offline/Update notification - same for all devices */}
       {(offlineReady || needRefresh) && (
-        <div className="fixed bottom-4 right-4 z-50 p-4 rounded-lg shadow-lg border max-w-sm animate-fade-in" 
-             style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--text-secondary)', borderOpacity: 0.2 }}>
+        <div className="fixed bottom-4 right-4 z-50 p-4 rounded-lg shadow-xl border max-w-sm animate-fade-in" 
+             style={{ 
+               backgroundColor: 'var(--surface)', 
+               borderColor: needRefresh ? 'var(--primary)' : 'var(--text-secondary)', 
+               borderWidth: needRefresh ? '2px' : '1px',
+               boxShadow: needRefresh ? '0 4px 20px rgba(82, 113, 255, 0.3)' : '0 4px 12px rgba(0, 0, 0, 0.15)'
+             }}>
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <h3 className="font-medium" style={{ color: 'var(--text-primary)' }}>
-                {offlineReady ? 'App ready to work offline' : 'New content available'}
+                {offlineReady ? '🌐 App ready to work offline' : '🆕 New update available'}
               </h3>
               <button 
                 className="hover:opacity-80"
@@ -218,16 +216,16 @@ const PWAInstallPrompt = () => {
             <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
               {offlineReady 
                 ? 'KittyPay has been installed and can work offline.'
-                : 'New version of KittyPay is available. Click reload to update.'}
+                : 'A new version of KittyPay is available with improvements and bug fixes.'}
             </p>
             
             {needRefresh && (
               <button
-                className="mt-2 w-full text-white py-2 px-4 rounded hover:opacity-90"
+                className="mt-2 w-full text-white py-2 px-4 rounded hover:opacity-90 font-medium transition-all duration-200"
                 style={{ backgroundColor: 'var(--primary)' }}
                 onClick={() => updateSW(true)}
               >
-                Reload & Update
+                🔄 Reload & Update
               </button>
             )}
           </div>
