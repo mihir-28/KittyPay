@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { getKittyById, updateKittyExpense, updateKittySettlement, deleteKittyExpense, updateKittyMember, removeKittyMember, deleteKitty } from "../firebase/kitties";
 import { trackSettlement } from "../firebase/analytics";
 import { FiArrowLeft, FiDollarSign, FiUsers, FiEdit2, FiCheck, FiX, FiTrash2, FiUser, FiAlertTriangle } from "react-icons/fi";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
-import { useNavigate } from "react-router-dom";
+import { getMemberIdentifier } from "../utils/memberUtils";
 
 // Custom confirmation alert component
 const ConfirmationAlert = ({ isOpen, onClose, onConfirm, title, message, confirmText = "Delete", cancelText = "Cancel", type = "danger" }) => {
@@ -76,7 +76,6 @@ const ConfirmationAlert = ({ isOpen, onClose, onConfirm, title, message, confirm
 };
 
 const KittyDetails = ({ kittyId, onBack }) => {
-  const navigate = useNavigate();
   const { currentUser } = useAuth();
   const [kitty, setKitty] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -86,7 +85,9 @@ const KittyDetails = ({ kittyId, onBack }) => {
   const [editingMember, setEditingMember] = useState(null);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [showDeleteMemberConfirmation, setShowDeleteMemberConfirmation] = useState(false);
+  const [showDeleteExpenseConfirmation, setShowDeleteExpenseConfirmation] = useState(false);
   const [memberToDelete, setMemberToDelete] = useState(null);
+  const [expenseToDelete, setExpenseToDelete] = useState(null);
 
   const handleShowConfirmation = (e) => {
     if (e.detail && e.detail.type === 'deleteKitty') {
@@ -97,7 +98,7 @@ const KittyDetails = ({ kittyId, onBack }) => {
     }
   };
 
-  const fetchKitty = async () => {
+  const fetchKitty = useCallback(async () => {
     try {
       setLoading(true);
       const kittyData = await getKittyById(kittyId);
@@ -132,7 +133,7 @@ const KittyDetails = ({ kittyId, onBack }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [kittyId, currentUser.uid, onBack]);
 
   useEffect(() => {
     document.addEventListener('SHOW_DELETE_CONFIRMATION', handleShowConfirmation);
@@ -146,7 +147,7 @@ const KittyDetails = ({ kittyId, onBack }) => {
     if (kittyId) {
       fetchKitty();
     }
-  }, [kittyId, currentUser, onBack]);
+  }, [kittyId, fetchKitty]);
 
   // Calculate what each person owes
   const calculateBalances = () => {
@@ -159,14 +160,11 @@ const KittyDetails = ({ kittyId, onBack }) => {
       shouldPay: 0, // Total amount this member should have paid based on participation
       owes: 0 // Net balance (positive means they owe, negative means they are owed)
     }));
+    
     // Calculate how much each person paid and should have paid
     kitty.expenses.forEach(expense => {
-      // Add to the payer's paid amount
-      // Check both userId and email to identify the payer correctly
-      const payer = memberBalances.find(m =>
-        (m.userId && m.userId === expense.paidById) ||
-        (!m.userId && m.email === expense.paidById)
-      );
+      // Add to the payer's paid amount using consistent member identification
+      const payer = memberBalances.find(m => getMemberIdentifier(m) === expense.paidById);
       if (payer) {
         payer.paid += expense.amount;
       }
@@ -177,10 +175,8 @@ const KittyDetails = ({ kittyId, onBack }) => {
 
       // For each participant, add to their shouldPay amount
       participants.forEach(participant => {
-        const member = memberBalances.find(m =>
-          (m.userId && m.userId === participant.userId) ||
-          (!m.userId && m.email === participant.email)
-        );
+        const participantId = getMemberIdentifier(participant);
+        const member = memberBalances.find(m => getMemberIdentifier(m) === participantId);
         if (member) {
           member.shouldPay += perPersonAmount;
         }
@@ -241,7 +237,7 @@ const KittyDetails = ({ kittyId, onBack }) => {
     return settlements;
   };
 
-  const handleSettlementToggle = async (settlement, index) => {
+  const handleSettlementToggle = async (settlement) => {
     try {
       setIsLoading(true);
 
@@ -332,15 +328,27 @@ const KittyDetails = ({ kittyId, onBack }) => {
   };
 
   const handleDeleteExpense = async (expense) => {
+    setExpenseToDelete(expense);
+    setShowDeleteExpenseConfirmation(true);
+  };
+
+  const confirmDeleteExpense = async () => {
+    if (!expenseToDelete) return;
+    
     try {
-      const result = await deleteKittyExpense(kittyId, expense.id);
+      console.log("Attempting to delete expense:", expenseToDelete);
+      console.log("Expense ID:", expenseToDelete.id);
+      console.log("Kitty ID:", kittyId);
+      
+      const result = await deleteKittyExpense(kittyId, expenseToDelete.id);
+      console.log("Delete result:", result);
 
       if (result.error) {
         throw new Error(result.error);
       }
 
       // Update local state
-      const updatedExpenses = kitty.expenses.filter(exp => exp.id !== expense.id);
+      const updatedExpenses = kitty.expenses.filter(exp => exp.id !== expenseToDelete.id);
       const newTotalAmount = updatedExpenses.reduce((sum, exp) => sum + exp.amount, 0);
 
       setKitty({
@@ -350,10 +358,12 @@ const KittyDetails = ({ kittyId, onBack }) => {
       });
 
       setEditingExpense(null);
+      setShowDeleteExpenseConfirmation(false);
+      setExpenseToDelete(null);
       toast.success("Expense deleted successfully");
     } catch (error) {
       console.error("Error deleting expense:", error);
-      toast.error("Failed to delete expense");
+      toast.error("Failed to delete expense: " + error.message);
     }
   };
 
@@ -379,7 +389,7 @@ const KittyDetails = ({ kittyId, onBack }) => {
 
       // Update local state
       const updatedMembers = kitty.members.map(member => {
-        const memberIdentifier = member.userId || member.email;
+        const memberIdentifier = getMemberIdentifier(member);
         if (memberIdentifier === memberId) {
           return { ...member, ...updatedMember };
         }
@@ -423,7 +433,8 @@ const KittyDetails = ({ kittyId, onBack }) => {
 
   const handleDeleteMember = async (member) => {
     try {
-      const memberId = member.userId || member.email;
+      const memberId = getMemberIdentifier(member);
+      console.log("Attempting to delete member:", member, "with identifier:", memberId);
 
       // Cannot delete the owner
       if (member.isOwner) {
@@ -437,16 +448,17 @@ const KittyDetails = ({ kittyId, onBack }) => {
         return;
       }
 
+      console.log("Calling removeKittyMember with:", kittyId, memberId);
       const result = await removeKittyMember(kittyId, memberId);
+      console.log("Remove result:", result);
 
       if (result.error) {
         throw new Error(result.error);
       }
 
-      // Update local state - remove the member
+      // Update local state - remove the member using consistent identification
       const updatedMembers = kitty.members.filter(m => {
-        const mId = m.userId || m.email;
-        return mId !== memberId;
+        return getMemberIdentifier(m) !== memberId;
       });
 
       // Update expenses to reflect member removal
@@ -456,10 +468,9 @@ const KittyDetails = ({ kittyId, onBack }) => {
           return expense;
         }
 
-        // Remove member from participants
+        // Remove member from participants using consistent identification
         const updatedParticipants = expense.participants?.filter(participant => {
-          const participantId = participant.userId || participant.email;
-          return participantId !== memberId;
+          return getMemberIdentifier(participant) !== memberId;
         }) || [];
 
         return {
@@ -475,6 +486,8 @@ const KittyDetails = ({ kittyId, onBack }) => {
       });
 
       setEditingMember(null);
+      setShowDeleteMemberConfirmation(false);
+      setMemberToDelete(null);
       toast.success("Member removed successfully");
     } catch (error) {
       console.error("Error removing member:", error);
@@ -483,34 +496,24 @@ const KittyDetails = ({ kittyId, onBack }) => {
   };
 
   const handleDeleteKitty = async () => {
-    // Show confirmation dialog
-    document.dispatchEvent(new CustomEvent('SHOW_DELETE_CONFIRMATION', {
-      detail: {
-        title: "Delete Kitty?",
-        message: `Are you sure you want to delete "${kitty.name}"? This will permanently delete all expenses and member data. This action cannot be undone.`,
-        onConfirm: async () => {
-          try {
-            const loadingToast = toast.loading("Deleting kitty...");
-            const result = await deleteKitty(kittyId, currentUser.uid);
+    try {
+      const loadingToast = toast.loading("Deleting kitty...");
+      const result = await deleteKitty(kittyId, currentUser.uid);
 
-            if (result.error) {
-              toast.dismiss(loadingToast);
-              toast.error(result.error);
-              return;
-            }
-
-            toast.dismiss(loadingToast);
-            toast.success("Kitty deleted successfully");
-            // Pass deleted kitty ID back to parent
-            onBack({ deleted: true, kittyId });
-          } catch (error) {
-            console.error("Error deleting kitty:", error);
-            toast.error("Failed to delete kitty");
-          }
-        },
-        type: 'danger'
+      if (result.error) {
+        toast.dismiss(loadingToast);
+        toast.error(result.error);
+        return;
       }
-    }));
+
+      toast.dismiss(loadingToast);
+      toast.success("Kitty deleted successfully");
+      // Pass deleted kitty ID back to parent
+      onBack({ deleted: true, kittyId });
+    } catch (error) {
+      console.error("Error deleting kitty:", error);
+      toast.error("Failed to delete kitty");
+    }
   };
 
   if (loading) {
@@ -535,7 +538,7 @@ const KittyDetails = ({ kittyId, onBack }) => {
 
         {isOwner && (
           <button
-            onClick={handleDeleteKitty}
+            onClick={() => setShowDeleteConfirmation(true)}
             className="flex items-center text-red-500 hover:text-red-600"
           >
             <FiTrash2 className="mr-1" /> Delete Kitty
@@ -915,7 +918,7 @@ const KittyDetails = ({ kittyId, onBack }) => {
                           <span className="font-medium">{settlement.to}</span>
                         </div>
                         <button
-                          onClick={() => handleSettlementToggle(settlement, idx)}
+                          onClick={() => handleSettlementToggle(settlement)}
                           className={`px-3 py-1 rounded-full text-xs font-medium ${isSettled
                             ? 'bg-green-500 text-white dark:bg-green-900/20 dark:text-green-400'
                             : 'bg-[var(--background)] text-[var(--text-secondary)]'
@@ -960,7 +963,7 @@ const KittyDetails = ({ kittyId, onBack }) => {
                         {/* Column 4: Action Button */}
                         <div className="flex justify-end items-center">
                           <button
-                            onClick={() => handleSettlementToggle(settlement, idx)}
+                            onClick={() => handleSettlementToggle(settlement)}
                             className={`flex items-center px-3 py-1.5 rounded-full text-sm font-medium ${isSettled
                               ? 'bg-green-500 text-white dark:bg-green-900/20 dark:text-green-400'
                               : 'bg-[var(--background)] text-[var(--text-secondary)] hover:bg-[var(--border)]'
@@ -1027,7 +1030,7 @@ const KittyDetails = ({ kittyId, onBack }) => {
         onClose={() => setShowDeleteConfirmation(false)}
         onConfirm={handleDeleteKitty}
         title="Delete Kitty?"
-        message="Are you sure you want to delete this kitty? This action cannot be undone."
+        message={`Are you sure you want to delete "${kitty.name}"? This will permanently delete all expenses and member data. This action cannot be undone.`}
       />
 
       {/* Member Delete Confirmation */}
@@ -1038,6 +1041,20 @@ const KittyDetails = ({ kittyId, onBack }) => {
           onConfirm={() => handleDeleteMember(memberToDelete)}
           title="Remove Member?"
           message={`Are you sure you want to remove ${memberToDelete.name} from this kitty? Their expenses will remain, but they won't be part of future expenses. This action cannot be undone.`}
+        />
+      )}
+
+      {/* Expense Delete Confirmation */}
+      {showDeleteExpenseConfirmation && expenseToDelete && (
+        <ConfirmationAlert
+          isOpen={showDeleteExpenseConfirmation}
+          onClose={() => {
+            setShowDeleteExpenseConfirmation(false);
+            setExpenseToDelete(null);
+          }}
+          onConfirm={confirmDeleteExpense}
+          title="Delete Expense?"
+          message={`Are you sure you want to delete the expense "${expenseToDelete.description}" of ${kitty.currency || '$'}${expenseToDelete.amount.toFixed(2)}? This action cannot be undone.`}
         />
       )}
     </div>
@@ -1151,15 +1168,7 @@ const ExpenseEditForm = ({ expense, onSave, onCancel, onDelete, kitty }) => {
   };
 
   const handleDeleteConfirm = () => {
-    // Show custom confirmation instead of window.confirm
-    document.dispatchEvent(new CustomEvent('SHOW_DELETE_CONFIRMATION', {
-      detail: {
-        title: "Delete Expense?",
-        message: `Are you sure you want to delete the expense "${expense.description}" of ${kitty.currency || '$'}${expense.amount.toFixed(2)}? This action cannot be undone.`,
-        onConfirm: () => onDelete(expense),
-        type: 'danger'
-      }
-    }));
+    onDelete(expense);
   };
 
   return (
@@ -1244,8 +1253,8 @@ const ExpenseEditForm = ({ expense, onSave, onCancel, onDelete, kitty }) => {
                     <option value="">Select who paid</option>
                     {kitty.members.map((member, idx) => (
                       <option
-                        key={member.userId || member.email || idx}
-                        value={member.userId || member.email}
+                        key={getMemberIdentifier(member) || idx}
+                        value={getMemberIdentifier(member)}
                       >
                         {member.name} {member.isOwner && "(Owner)"}
                       </option>
@@ -1335,20 +1344,19 @@ const ExpenseEditForm = ({ expense, onSave, onCancel, onDelete, kitty }) => {
                   <div className="bg-[var(--background)] p-1.5 rounded-lg max-h-28 sm:max-h-32 overflow-y-auto scrollbar-hide mb-1 sm:mb-2 border border-[var(--border)]">
                     {kitty.members.map((member, idx) => {
                       const isSelected = formData.participants.some(p =>
-                        (p.userId && p.userId === (member.userId || member.email)) ||
-                        (!p.userId && p.email === (member.userId || member.email))
+                        getMemberIdentifier(p) === getMemberIdentifier(member)
                       );
 
                       return (
                         <div
-                          key={member.userId || member.email || idx}
+                          key={getMemberIdentifier(member) || idx}
                           className="flex items-center p-1.5 hover:bg-[var(--surface)] rounded-md"
                         >
                           <input
                             type="checkbox"
                             id={`participant-edit-${idx}`}
                             checked={isSelected}
-                            onChange={() => handleParticipantToggle(member.userId || member.email)}
+                            onChange={() => handleParticipantToggle(getMemberIdentifier(member))}
                             className="w-4 h-4 text-[var(--primary)] rounded"
                           />
                           <label
@@ -1432,13 +1440,11 @@ const MemberEditForm = ({ member, onSave, onCancel, onDelete, kitty, currentUser
   };
 
   const handleDeleteConfirm = () => {
-    // Show custom confirmation instead of window.confirm
+    // Show custom confirmation for member deletion
     document.dispatchEvent(new CustomEvent('SHOW_DELETE_CONFIRMATION', {
       detail: {
-        title: `Remove ${member.name}?`,
-        message: `Are you sure you want to remove ${member.name} from this kitty? Their expenses will remain, but they won't be part of future expenses. This action cannot be undone.`,
-        onConfirm: () => onDelete(member),
-        type: 'danger'
+        type: 'deleteMember',
+        member: member
       }
     }));
   };

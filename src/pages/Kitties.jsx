@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 import { useAuth } from "../contexts/AuthContext";
 import { FiPlus, FiTrash2, FiEdit2, FiDollarSign, FiUsers, FiX, FiEye, FiAlertTriangle } from "react-icons/fi";
 import { createKitty, getUserKitties, addExpense, addMember, deleteKitty } from "../firebase/kitties";
 import { trackKittyCreated, trackExpenseAdded, trackMemberAdded } from "../firebase/analytics";
 import KittyDetails from "../components/KittyDetails";
+import { getMemberIdentifier } from "../utils/memberUtils";
 
 // Inline styles for cross-browser scroll hiding
 const hideScrollbarStyle = {
@@ -183,15 +185,13 @@ const Kitties = () => {
       // Get selected participants from the form
       const participants = expenseParticipants.map(participantId => {
         const member = currentKitty.members.find(m =>
-          (m.userId && m.userId === participantId) ||
-          (!m.userId && m.email === participantId)
+          getMemberIdentifier(m) === participantId
         );
         return member;
       }).filter(Boolean);
       // Get the payer information
       const payer = currentKitty.members.find(m =>
-        (m.userId === expensePayer) ||
-        (!m.userId && m.email === expensePayer)
+        getMemberIdentifier(m) === expensePayer
       );
 
       const result = await addExpense(currentKitty.id, {
@@ -200,7 +200,7 @@ const Kitties = () => {
         category: expenseCategory,
         notes: expenseNotes,
         paidBy: payer.name, // Display name of who paid
-        paidById: payer.userId || payer.email, // ID of who paid
+        paidById: getMemberIdentifier(payer), // ID of who paid
         participants: participants
       });
 
@@ -257,14 +257,14 @@ const Kitties = () => {
       return;
     }
 
-    // Check for duplicate members based on name and email
+    // Check for duplicate members based on name and email/memberId
     const isDuplicate = currentKitty.members.some(member => {
       // If email is provided, check both name and email
       if (memberEmail && memberEmail.trim()) {
         return member.name.toLowerCase().trim() === memberName.toLowerCase().trim() || 
                (member.email && member.email.toLowerCase().trim() === memberEmail.toLowerCase().trim());
       }
-      // If no email provided, only check name
+      // If no email provided, only check name (since memberIds are unique by timestamp)
       return member.name.toLowerCase().trim() === memberName.toLowerCase().trim();
     });
 
@@ -318,7 +318,7 @@ const Kitties = () => {
     setCurrentKitty(kitty);
     // Pre-select all members as participants by default
     const allParticipantIds = kitty.members.map(member =>
-      member.userId || member.email
+      getMemberIdentifier(member)
     );
     setExpenseParticipants(allParticipantIds);
     // Set current user as the default payer
@@ -352,8 +352,7 @@ const Kitties = () => {
       if (expense.participants) {
         // Check if current user is a participant in this expense
         const isParticipant = expense.participants.some(participant =>
-          participant.userId === currentUser.uid ||
-          (!participant.userId && participant.email === currentUser.email)
+          getMemberIdentifier(participant) === getMemberIdentifier({ userId: currentUser.uid, email: currentUser.email })
         );
 
         if (isParticipant) {
@@ -386,7 +385,7 @@ const Kitties = () => {
     if (select) {
       // Select all members
       const allParticipantIds = currentKitty.members.map(member =>
-        member.userId || member.email
+        getMemberIdentifier(member)
       );
       setExpenseParticipants(allParticipantIds);
     } else {
@@ -532,7 +531,7 @@ const Kitties = () => {
                     <div className="flex flex-wrap gap-1">
                       {kitty.members.map((member, idx) => (
                         <span
-                          key={member.userId || member.email || idx}
+                          key={getMemberIdentifier(member) || idx}
                           className="bg-[var(--background)] px-2 py-1 rounded-lg text-sm"
                         >
                           {member.name}
@@ -820,8 +819,8 @@ const Kitties = () => {
                             <option value="">Select who paid</option>
                             {currentKitty.members.map((member, idx) => (
                               <option
-                                key={member.userId || member.email || idx}
-                                value={member.userId || member.email}
+                                key={getMemberIdentifier(member) || idx}
+                                value={getMemberIdentifier(member)}
                               >
                                 {member.name} {member.isOwner && "(Owner)"}
                               </option>
@@ -897,14 +896,14 @@ const Kitties = () => {
                           >
                             {currentKitty.members.map((member, idx) => (
                               <div
-                                key={member.userId || member.email || idx}
+                                key={getMemberIdentifier(member) || idx}
                                 className="flex items-center p-1.5 hover:bg-[var(--surface)] rounded-md"
                               >
                                 <input
                                   type="checkbox"
                                   id={`participant-${idx}`}
-                                  checked={expenseParticipants.includes(member.userId || member.email)}
-                                  onChange={() => handleParticipantToggle(member.userId || member.email)}
+                                  checked={expenseParticipants.includes(getMemberIdentifier(member))}
+                                  onChange={() => handleParticipantToggle(getMemberIdentifier(member))}
                                   className="w-4 h-4 text-[var(--primary)] rounded"
                                 />
                                 <label

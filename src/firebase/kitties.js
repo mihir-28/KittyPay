@@ -157,10 +157,15 @@ export const addMember = async (kittyId, { email, name }) => {
       return { error: "Kitty not found" };
     }
 
-    // In a real app, you would check if the user exists
-    // and send them an invitation if they don't
+    // Generate a unique member ID for non-authenticated members
+    // Use email if provided, otherwise generate a unique ID based on name and timestamp
+    const memberId = email && email.trim() ? 
+      email.trim() : 
+      `member_${name.toLowerCase().replace(/\s+/g, '_')}_${Date.now()}`;
+    
     const newMember = {
       userId: null, // To be filled when they accept the invitation
+      memberId, // Unique identifier for this member
       email: email || "", // Handle optional email
       name,
       isOwner: false,
@@ -600,11 +605,22 @@ export const updateKittyMember = async (kittyId, memberId, updatedData) => {
     const kittyData = kittyDoc.data();
     const members = kittyData.members || [];
     
-    // Find the member to update (by userId or by email if userId is null)
-    const memberIndex = members.findIndex(member => 
-      (member.userId && member.userId === memberId) || 
-      (!member.userId && member.email === memberId)
-    );
+    // Find the member to update using improved identification logic
+    const memberIndex = members.findIndex(member => {
+      // First priority: match by userId (authenticated users)
+      if (member.userId && member.userId === memberId) {
+        return true;
+      }
+      // Second priority: match by email (if email was provided when adding)
+      if (member.email && member.email === memberId) {
+        return true;
+      }
+      // Third priority: match by memberId (generated for members without email/userId)
+      if (member.memberId && member.memberId === memberId) {
+        return true;
+      }
+      return false;
+    });
     
     if (memberIndex === -1) {
       return { error: "Member not found" };
@@ -622,8 +638,12 @@ export const updateKittyMember = async (kittyId, memberId, updatedData) => {
     const updatedExpenses = expenses.map(expense => {
       const participants = expense.participants || [];
       const updatedParticipants = participants.map(participant => {
-        if ((participant.userId && participant.userId === memberId) ||
-            (!participant.userId && participant.email === memberId)) {
+        // Check if this is the member we're updating using improved logic
+        const isThisMember = (participant.userId && participant.userId === memberId) ||
+                            (participant.email && participant.email === memberId) ||
+                            (participant.memberId && participant.memberId === memberId);
+        
+        if (isThisMember) {
           return {
             ...participant,
             name: updatedData.name || participant.name,
@@ -673,11 +693,22 @@ export const removeKittyMember = async (kittyId, memberId) => {
     const kittyData = kittyDoc.data();
     const members = kittyData.members || [];
     
-    // Find the member to remove (by userId or by email if userId is null)
-    const memberIndex = members.findIndex(member => 
-      (member.userId && member.userId === memberId) || 
-      (!member.userId && member.email === memberId)
-    );
+    // Find the member to remove - improved logic to handle userId, email, or memberId
+    const memberIndex = members.findIndex(member => {
+      // First priority: match by userId (authenticated users)
+      if (member.userId && member.userId === memberId) {
+        return true;
+      }
+      // Second priority: match by email (if email was provided when adding)
+      if (member.email && member.email === memberId) {
+        return true;
+      }
+      // Third priority: match by memberId (generated for members without email/userId)
+      if (member.memberId && member.memberId === memberId) {
+        return true;
+      }
+      return false;
+    });
     
     if (memberIndex === -1) {
       return { error: "Member not found" };
@@ -702,12 +733,23 @@ export const removeKittyMember = async (kittyId, memberId) => {
         return expense;
       }
       
-      // Remove member from participants
+      // Remove member from participants using improved identification logic
       const participants = expense.participants || [];
-      const updatedParticipants = participants.filter(participant => 
-        !((participant.userId && participant.userId === memberId) ||
-          (!participant.userId && participant.email === memberId))
-      );
+      const updatedParticipants = participants.filter(participant => {
+        // Don't remove if matches by userId
+        if (participant.userId && participant.userId === memberId) {
+          return false;
+        }
+        // Don't remove if matches by email
+        if (participant.email && participant.email === memberId) {
+          return false;
+        }
+        // Don't remove if matches by memberId
+        if (participant.memberId && participant.memberId === memberId) {
+          return false;
+        }
+        return true;
+      });
       
       // Recalculate per person amount if participants changed
       const perPersonAmount = updatedParticipants.length ? 
