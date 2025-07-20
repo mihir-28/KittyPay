@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 import { useAuth } from "../contexts/AuthContext";
 import { FiPlus, FiTrash2, FiEdit2, FiDollarSign, FiUsers, FiX, FiEye, FiAlertTriangle } from "react-icons/fi";
@@ -258,7 +257,18 @@ const Kitties = () => {
       return;
     }
 
-    if (currentKitty.members.some(member => member.email === memberEmail)) {
+    // Check for duplicate members based on name and email
+    const isDuplicate = currentKitty.members.some(member => {
+      // If email is provided, check both name and email
+      if (memberEmail && memberEmail.trim()) {
+        return member.name.toLowerCase().trim() === memberName.toLowerCase().trim() || 
+               (member.email && member.email.toLowerCase().trim() === memberEmail.toLowerCase().trim());
+      }
+      // If no email provided, only check name
+      return member.name.toLowerCase().trim() === memberName.toLowerCase().trim();
+    });
+
+    if (isDuplicate) {
       setError("This member is already in the kitty");
       setIsSubmitting(false);
       return;
@@ -268,8 +278,8 @@ const Kitties = () => {
 
     try {
       const result = await addMember(currentKitty.id, {
-        email: memberEmail,
-        name: memberName
+        email: memberEmail.trim(),
+        name: memberName.trim()
       });
 
       if (result.error) {

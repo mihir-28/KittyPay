@@ -8,8 +8,6 @@ import {
   arrayUnion,
   query,
   where,
-  serverTimestamp,
-  orderBy,
   deleteDoc
 } from "firebase/firestore";
 import { db } from "./config";
@@ -163,7 +161,7 @@ export const addMember = async (kittyId, { email, name }) => {
     // and send them an invitation if they don't
     const newMember = {
       userId: null, // To be filled when they accept the invitation
-      email,
+      email: email || "", // Handle optional email
       name,
       isOwner: false,
       joinedAt: new Date() // Use Date object instead of serverTimestamp in arrays
