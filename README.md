@@ -10,7 +10,7 @@ KittyPay is a sleek and smart expense-splitting app designed for groups of frien
 
 ## 📱 Live Demo
 
-Check out the live version at: [https://kittypay.netlify.app](https://kittypay.netlify.app)
+Check out the live version at: [https://kittypay.mihirnagda.in](https://kittypay.mihirnagda.in)
 
 ## ✨ Key Features
 
